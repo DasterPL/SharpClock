@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <properties>
+    <screen brightness="10" />
+    <nightmode enable="False" />
+  </properties>
+  <modules>
+    <module class="PixelClock" start="True">
+      <params Timer="10000" Visible="True" />
+    </module>
+    <module class="PixelCalendar" start="True">
+      <params Timer="5000" Visible="True" />
+    </module>
+    <module class="PixelWeather" start="True">
+      <params Timer="10000" Visible="True" ModuleToShow="Temp" Location="05-850,pl" LocationBy="zip" />
+    </module>
+    <module class="PixelText" start="True">
+      <params Timer="5700" Visible="True" Color="Aqua" Speed="150" Text="x"/>
+    </module>
+  </modules>
+</config>

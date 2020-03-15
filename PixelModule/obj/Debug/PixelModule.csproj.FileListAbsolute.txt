@@ -1,0 +1,2 @@
+C:\Users\User\Desktop\SharpClock\PixelModule\bin\Debug\PixelModule.dll
+C:\Users\User\Desktop\SharpClock\PixelModule\obj\Debug\PixelModule.dll

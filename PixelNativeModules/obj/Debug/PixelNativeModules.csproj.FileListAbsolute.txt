@@ -1,0 +1,3 @@
+C:\Users\User\Desktop\SharpClock\PixelNativeModules\bin\Debug\PixelNativeModules.dll
+C:\Users\User\Desktop\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.csprojAssemblyReference.cache
+C:\Users\User\Desktop\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.dll
