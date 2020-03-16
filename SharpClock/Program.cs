@@ -15,7 +15,7 @@ namespace SharpClock
             UpTime = Stopwatch.StartNew();
             
             Logger.Clear();
-            Logger.Log("Sharp Clock v0.7");
+            Logger.Log("Sharp Clock v0.7.1");
 
             ParseCommands(args);
             HandleUnixSignals();
@@ -65,7 +65,7 @@ namespace SharpClock
                 {
                     int index = UnixSignal.WaitAny(signals, -1);
 
-                    Mono.Unix.Native.Signum signal = signals[index].Signum;
+                    Signum signal = signals[index].Signum;
 
                     if (signal == Signum.SIGINT || signal == Signum.SIGUSR1)
                     {
