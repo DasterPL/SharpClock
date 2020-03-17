@@ -23,8 +23,8 @@ namespace SharpClock
 
         private void WebServer_OnError(string error)
         {
-            Program.Kill();
-            Environment.Exit(1);
+            //Program.Kill();
+            //Environment.Exit(1);
         }
 
         private void WebServer_OnPost(string path, System.Collections.Specialized.NameValueCollection query)

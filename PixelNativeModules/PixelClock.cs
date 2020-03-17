@@ -18,6 +18,7 @@ namespace PixelNativeModules
 
         public TimeSpan Alarm { get; set; } = new TimeSpan(0, 0, 0);
         TimeSpan showAlarmScreen = new TimeSpan(0, 0, 0);
+        bool playAlarm = false;
 
         public bool EnableTimer { get; set; } = false;
 
@@ -33,10 +34,16 @@ namespace PixelNativeModules
         {
             Date = DateTime.Now;
 
-            if(EnableTimer && Alarm.Hours == Date.Hour && Alarm.Minutes == Date.Minute)
+            if (EnableTimer && Alarm.Hours == Date.Hour && Alarm.Minutes == Date.Minute)
             {
+                playAlarm = true;
+            }
+            if (playAlarm)
+            {
+                pixelRenderer.SwitchModule(this);
                 GPIOevents.EnableBuzzer();
             }
+
         }
         public override void Draw(Stopwatch stopwatch)
         {
@@ -83,6 +90,7 @@ namespace PixelNativeModules
             else if(button == ButtonId.User3)
             {
                 EnableTimer = !EnableTimer;
+                playAlarm = false;
                 showAlarmScreen = EnableTimer ? new TimeSpan(0, 0, 2) : new TimeSpan(0, 0, 0);
                 new System.Threading.Tasks.Task(async()=> {
                     while (showAlarmScreen.Seconds > 0)

@@ -104,7 +104,7 @@ namespace SharpClock
 
                 foreach (var prop in module.GetType().GetProperties())
                 {
-                    if (prop.Name == "Name" || prop.Name == "IsRunning")
+                    if (prop.Name == "Name" || prop.Name == "IsRunning" || prop.Name == "Icon")
                     {
                         continue;
                     }
