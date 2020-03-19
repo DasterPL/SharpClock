@@ -61,7 +61,8 @@ namespace SharpClock
                         {
                             if (Current != settingModule)
                                 settingModule.Stop();
-                        } }).Start();
+                        }
+                    }).Start();
                     break;
                 case ButtonId.Pause:
                     Pause = !Pause;
@@ -165,14 +166,14 @@ namespace SharpClock
         }
         public void Stop()
         {
+            Logger.Log("Stopping Renderer");
+            stop = true;
+            while (IsRunning) ;
             Logger.Log("Stopping modules");
             foreach (var module in modules)
             {
                 module.Stop();
             }
-            Logger.Log("Stopping Renderer");
-            stop = true;
-            while (IsRunning) ;
             Logger.Log("Clearing Screen");
             Screen.Clear();
             Screen.Draw();
@@ -199,12 +200,16 @@ namespace SharpClock
                 {
                     modules.Add(new NullModule());
                 }
-                    
-                foreach (var module in modules.ToList())
-                {
-                    Current = module;
 
-                    if (stop || nextModule || !Current.IsRunning || !Current.Visible)
+                List<PixelModule> list = modules.ToList();
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (stop)
+                        break;
+
+                    Current = list[i];
+                    
+                    if (nextModule || !Current.IsRunning || !Current.Visible)
                     {
                         //Logger.Log("Zmiana modulu!!!");
                         //Logger.Log($"Name: {module.Name}, ON: {module.IsRunning}, Visible: {module.Visible}");
@@ -229,6 +234,42 @@ namespace SharpClock
                         int elapsed = 33 - (end - start);
                         int delay = elapsed > 0 ? elapsed : 0;
                         Thread.Sleep(delay);
+                    }
+                    if (!stop)
+                    {
+                        int offset = -9;
+                        timer.Restart();
+                        new Task(async () =>
+                        {
+                            while (offset <= 0)
+                            {
+                                offset++;
+                                await Task.Delay(100);
+                            }
+                        }).Start();
+                        while (offset < 0)
+                        {
+                            int nextModuleNr = i + 1;
+                            while (!list[nextModuleNr].IsRunning || !list[nextModuleNr].Visible)
+                            {
+                                nextModuleNr = nextModuleNr >= list.Count - 1 ? 0 : nextModuleNr + 1;
+                            }
+
+                            int start = (int)timer.ElapsedMilliseconds;
+
+                            Screen.Clear();
+                            Current.Draw(timer);
+                            Screen.Draw(offset + 10);
+
+                            Screen.Clear();
+                            list[nextModuleNr].Draw(timer);
+                            Screen.Draw(offset);
+
+                            int end = (int)timer.ElapsedMilliseconds;
+                            int elapsed = 33 - (end - start);
+                            int delay = elapsed > 0 ? elapsed : 0;
+                            Thread.Sleep(delay);
+                        }
                     }
                 }
             }

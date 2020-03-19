@@ -1,0 +1,5 @@
+C:\Users\User\Desktop\SharpClock\PixelText\bin\Debug\PixelText.dll
+C:\Users\User\Desktop\SharpClock\PixelText\bin\Debug\PixelText.pdb
+C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.csprojAssemblyReference.cache
+C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.dll
+C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.pdb

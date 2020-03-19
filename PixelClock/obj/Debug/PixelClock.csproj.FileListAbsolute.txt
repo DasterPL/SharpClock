@@ -1,0 +1,5 @@
+C:\Users\User\Desktop\SharpClock\PixelClock\bin\Debug\PixelClock.dll
+C:\Users\User\Desktop\SharpClock\PixelClock\bin\Debug\PixelClock.pdb
+C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.csprojAssemblyReference.cache
+C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.dll
+C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.pdb
