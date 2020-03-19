@@ -15,7 +15,7 @@ namespace SharpClock
             UpTime = Stopwatch.StartNew();
             
             Logger.Clear();
-            Logger.Log("Sharp Clock v0.7.1");
+            Logger.Log("Sharp Clock v0.7.5");
 
             ParseCommands(args);
             HandleUnixSignals();

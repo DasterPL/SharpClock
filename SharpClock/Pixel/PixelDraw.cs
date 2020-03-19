@@ -51,6 +51,39 @@ namespace SharpClock
         }
         ws281x.Net.Neopixel neopixel;
 
+        void movePixels(int offset = 1)
+        {
+            int len = neopixel.GetNumberOfPixels();
+            if (offset > 0)
+            {
+                for (int i = 0; i < offset; i++)
+                {
+                    for (int j = len - 1; j > 0; j--)
+                    {
+                        if (j % 8 == 0)
+                        {
+                            neopixel.SetPixelColor(Array.IndexOf(Pixels, j), Color.Black);
+                        }
+                        else
+                            neopixel.SetPixelColor(Array.IndexOf(Pixels, j), neopixel.LedList.GetColor(Array.IndexOf(Pixels, j - 1)));
+                    }
+                }
+            }
+            else if (offset < 0)
+            {
+                for (int i = 0; i < -offset; i++)
+                {
+                    for (int j = 0; j < len; j++)
+                    {
+                        if ((j - 7) % 8 == 0)
+                            neopixel.SetPixelColor(Array.IndexOf(Pixels, j), Color.Black);
+                        else
+                            neopixel.SetPixelColor(Array.IndexOf(Pixels, j), neopixel.LedList.GetColor(Array.IndexOf(Pixels, j + 1)));
+                    }
+
+                }
+            }
+        }
         Font_new Font = null;
 
         Dictionary<int, int[]> RomanFont = null;
@@ -294,7 +327,7 @@ namespace SharpClock
                 var PixelLetter = Font[l].Points;
                 foreach (var pixel in PixelLetter)
                 {
-                    neopixel.SetPixelColor(Array.IndexOf(Pixels, current_x + pixel), c);
+                    SetPixel(current_x + pixel, c);
                 }
                 current_x += Font[l].Size * 8 + (8 * spaces);
             }
@@ -308,7 +341,7 @@ namespace SharpClock
             var PixelLetter = RomanFont[number];
             foreach (var pixel in PixelLetter)
             {
-                neopixel.SetPixelColor(Array.IndexOf(Pixels, current_x + pixel), c);
+                SetPixel(current_x + pixel, c);
             }
 
         }
@@ -320,7 +353,7 @@ namespace SharpClock
             {
                 if (imgColors[i].A == 0)
                     continue;
-                neopixel.SetPixelColor(Array.IndexOf(Pixels, startPos + i), imgColors[i]);
+                SetPixel(startPos + i, imgColors[i]);
             }
         }
         public int TextLength(string text, int spaces = 1, int x = 0)
@@ -342,8 +375,11 @@ namespace SharpClock
             }
             return current_x / 8;
         }
-        public void Draw()
+
+        public void Draw(int offset = 0)
         {
+            movePixels(offset);
+
             neopixel.Show();
         }
     }

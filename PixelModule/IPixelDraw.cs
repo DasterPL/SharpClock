@@ -15,7 +15,7 @@ namespace SharpClock
         /// <summary>
         /// Display data on screen
         /// </summary>
-        void Draw();
+        void Draw(int offset = 0);
         /// <summary>
         /// Return current screen as image
         /// </summary>

@@ -11,6 +11,7 @@ C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\WebPage\style.min.css
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\img\font_size
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\SharpClock.exe.config
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\SharpClock.exe
+C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Mono.Posix.dll
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Newtonsoft.Json.dll
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\PixelModule.dll
 C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Swan.dll
@@ -32,4 +33,3 @@ C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Unosquare.WiringPi.xml
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.csprojAssemblyReference.cache
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.csproj.CopyComplete
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.exe
-C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Mono.Posix.dll
