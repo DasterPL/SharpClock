@@ -50,6 +50,8 @@
     <Compile Include="NullModule.cs" />
     <Compile Include="PixelModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VisibleName.cs" />
+    <Compile Include="VisibleNameEnum.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

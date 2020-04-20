@@ -6,13 +6,20 @@ namespace PixelText
 {
     public class PixelText : PixelModule
     {
+        [VisibleName(lang = "pl", value = "Tekst")]
+        [VisibleName(lang = "en", value = "Text")]
         public string Text { get; set; } = "Sharp Clock";
+        [VisibleName(lang = "pl", value = "Wstrzymaj")]
+        [VisibleName(lang = "en", value = "Pause")]
         public bool Pause { get; set; } = false;
-        int pos = 2;
-
+        [VisibleName(lang = "pl", value = "Kolor tekstu")]
+        [VisibleName(lang = "en", value = "Text Color")]
         public Color Color { get; set; } = Color.White;
+        [VisibleName(lang = "pl", value = "Szybkość Przewijania")]
+        [VisibleName(lang = "en", value = "Scroll speed")]
         public int Speed { get => Tickrate; set => Tickrate = value; }
 
+        int pos = 2;
         public PixelText()
         {
             Icon = "message";

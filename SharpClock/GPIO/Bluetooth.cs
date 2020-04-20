@@ -21,7 +21,7 @@ namespace SharpClock
             bluetooth = Unosquare.RaspberryIO.Computer.Bluetooth.Instance;
             await bluetooth.PowerOn();
             var s = (await bluetooth.ListControllers()).ToArray();
-            foreach (var item in s)
+            foreach (string item in s)
             {
                 Console.WriteLine(item);
             }

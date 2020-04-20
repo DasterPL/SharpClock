@@ -22,7 +22,7 @@ namespace SharpClock
             }
             catch (Exception)
             {
-                xml.LoadXml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><config><properties><screen brightness = \"10\" /><nightmode enable = \"False\" /></properties><modules></modules</config>");
+                xml.LoadXml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><config><properties><screen brightness = \"10\" /><animatedSwitching enabled=\"false\" /><nightmode enable = \"False\" /></properties><modules></modules</config>");
                 xml.Save(file);
             }
         }
@@ -198,6 +198,15 @@ namespace SharpClock
             set
             {
                 xml.DocumentElement["properties"]["screen"].SetAttribute("brightness", value.ToString());
+                xml.Save(file);
+            }
+        }
+        public bool AnimatedSwitching
+        {
+            get => bool.Parse(xml.DocumentElement["properties"]["animatedSwitching"].GetAttribute("enabled"));
+            set
+            {
+                xml.DocumentElement["properties"]["animatedSwitching"].SetAttribute("enabled", value.ToString());
                 xml.Save(file);
             }
         }

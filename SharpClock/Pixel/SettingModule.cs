@@ -42,8 +42,8 @@ namespace SharpClock
             },
             new Function()
             {
-                Name = "Test",
-                Action = ()=>{}
+                Name = "Animacja Przewijania (beta)",
+                Action = ()=>{PixelRenderer.Pixel.AnimatedSwitching = !PixelRenderer.Pixel.AnimatedSwitching; }
             },
         };
         List<Function> CurrentMenu;
