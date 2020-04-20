@@ -58,6 +58,15 @@ namespace SharpClock
                             {
                                 dynamic p = new JObject();
                                 p.Name = prop.Name;
+                                p.VisibleName = new JArray();
+                                foreach (VisibleName visibleName in prop.GetCustomAttributes(typeof(VisibleName), true))
+                                {
+                                    dynamic vn = new JObject();
+                                    vn.lang = visibleName.lang;
+                                    vn.value = visibleName.value;
+
+                                    p.VisibleName.Add(vn);
+                                }
                                 if (prop.Name == "Name" || prop.Name == "IsRunning" || prop.Name == "Icon")
                                 {
                                     continue;
@@ -67,6 +76,20 @@ namespace SharpClock
                                     p.Value = prop.GetValue(module).ToString();
                                     p.type = "Enum";
                                     p.options = string.Join(",", Enum.GetNames(prop.PropertyType));
+                                    p.visibleOptions = new JArray();
+                                    foreach (VisibleNameEnum visibleName in prop.PropertyType.GetCustomAttributes(typeof(VisibleNameEnum), true))
+                                    {
+                                        dynamic vn = new JObject();
+                                        vn.lang = visibleName.lang;
+
+                                        dynamic vns = new JArray();
+                                        foreach (var item in visibleName.values)
+                                        {
+                                            vns.Add(item);
+                                        }
+                                        vn.values = vns;
+                                        p.visibleOptions.Add(vn);
+                                    }
                                 }
                                 else if (prop.PropertyType == typeof(Color))
                                 {
@@ -173,7 +196,14 @@ namespace SharpClock
                     dynamic Jprop = new JObject();
                     Jprop.Brightness = PixelDraw.Screen.Brightness;
                     Jprop.Pause = PixelRenderer.Pixel.Pause;
-                    WebServer.PostResponse = Jprop;//.ToString();
+                    Jprop.AnimatedSwitching = PixelRenderer.Pixel.AnimatedSwitching;
+                    WebServer.PostResponse = Jprop;
+                    break;
+                case "/AnimatedSwitching":
+                    var SwitchValue = bool.Parse(query["Value"]);
+                    PixelRenderer.Pixel.AnimatedSwitching = SwitchValue;
+                    Config.AnimatedSwitching = SwitchValue;
+                    WebServer.PostResponse = "true";
                     break;
                 case "/getScreen":
                     using (Image image = PixelDraw.Screen.GetScreen())

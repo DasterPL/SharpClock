@@ -1,5 +1,28 @@
 $(function () {
     console.log("ready!");
+    const languageDictionary = {
+        pl:
+        {
+            languageName: "pl",
+            on: "On",
+            off: "Off",
+            module: "Moduł",
+            moduleSetting: "Ustawienia Modułów",
+            options: "Opcje"
+        },
+        en:
+        {
+            languageName: "en",
+            on: "On",
+            off: "Off",
+            module: "Module",
+            moduleSetting: "Module Setting",
+            options: "Options"
+        }
+    };
+    let lang = languageDictionary.en;
+    if (navigator.language == "pl-PL")
+        lang = languageDictionary.pl;
     //$("#Loader").hide();
     LoadProperties();
     LoadModuleList();
@@ -39,26 +62,37 @@ $(function () {
                 values += `<input type="hidden" name="Module" value="${prop.Name}"/>`;
 
                 //Start Stop Module
-                values += `<p><label>Module</label>`;
+                values += `<p><label>${lang.module}</label>`;
                 values += `<div class="switch"><label for="${prop.Name}_Power">`;
-                values += `Off`;
+                values += `${lang.off}`;
                 values += `<input type="checkbox" id="${prop.Name}_Power" name="Power" ${prop.Status == "started" ? "checked" : ""} />`;
                 values += `<span class="lever"></span>`;
-                values += `On`;
+                values += `${lang.on}`;
                 values += `</label></div></p><br />`;
 
                 prop.Values.forEach(function (Value) {
                     let tmp = `<p>`;
+                    let visibleName;
+                    try {
+                        visibleName = Value.VisibleName.find((value) => value.lang == lang.languageName).value;
+                    } catch (e) {
+                        try {
+                            visibleName = Value.VisibleName.find((value) => value.lang == "en").value;
+                        } catch (e) {
+                            visibleName = Value.Name;
+                        }
+                    }
+                    
                     //Number
                     if (Value.type == "Int32" || Value.type == "float") {
                         tmp += `<label for="${prop.Name}_${Value.Name}">`;
-                        tmp += `<span>${Value.Name}</span>`;
+                        tmp += `<span>${visibleName}</span>`;
                         tmp += `<input type="number" id="${prop.Name}_${Value.Name}" name="${Value.Name}" value="${Value.Value}" />`;
                         tmp += `</label>`;
                     }
                     //Checkbox
                     else if (Value.type == "Boolean") {
-                        tmp += `<label>${Value.Name}</label>`;
+                        tmp += `<label>${visibleName}</label>`;
                         tmp += `<div class="switch"><label for="${prop.Name}_${Value.Name}">`;
                         tmp += `Off`;
                         tmp += `<input type="checkbox" id="${prop.Name}_${Value.Name}" name="${Value.Name}" ${Value.Value == "True" ? "checked" : ""} />`;
@@ -69,25 +103,39 @@ $(function () {
                     //String
                     else if (Value.type == "String") {
                         tmp += `<label for="${prop.Name}_${Value.Name}">`;
-                        tmp += `<span>${Value.Name}</span>`;
+                        tmp += `<span>${visibleName}</span>`;
                         tmp += `<input type="text" id="${prop.Name}_${Value.Name}" name="${Value.Name}" value="${Value.Value}" />`;
                         tmp += `</label>`;
                     }
                     //RadioButton
                     else if (Value.type == "Enum") {
                         let radioOptions = Value.options.split(",");
-                        tmp += `<label>${Value.Name}</label><br/>`;
+                        tmp += `<label>${visibleName}</label><br/>`;
                         radioOptions.forEach(function (radioOption) {
+                            let visibleRadioName;
+                            try {
+                                visibleRadioName = Value.visibleOptions.find((value) => value.lang == lang.languageName).values;
+                                visibleRadioName = visibleRadioName.find((value) => value.split("=")[0] == radioOption).split("=")[1];
+
+                            } catch (e) {
+                                try {
+                                    visibleRadioName = Value.visibleOptions.find((value) => value.lang == "en").value;
+                                    visibleRadioName = visibleRadioName.find((value) => value.split("=")[0] == radioOption).split("=")[1];
+                                } catch (e) {
+                                    visibleRadioName = radioOption;
+                                }
+                            }
+
                             tmp += `<label for="${prop.Name}_${Value.Name}_${radioOption}">`;
                             tmp += `<input type="radio" id="${prop.Name}_${Value.Name}_${radioOption}" name="${Value.Name}" value="${radioOption}" ${Value.Value == radioOption ? `checked` : ""} />`;
-                            tmp += `<span>${radioOption}</span>`;
+                            tmp += `<span>${visibleRadioName}</span>`;
                             tmp += `</label>`;
                             tmp += `<br />`;
                         });
                     }
                     //Colorpicker
                     else if (Value.type == "Color") {
-                        tmp += `<label>${Value.Name}</label><br/>`;
+                        tmp += `<label>${visibleName}</label><br/>`;
                         tmp += `<label for="${prop.Name}_${Value.Name}">`;
                         tmp += `<input type="color" id="${prop.Name}_${Value.Name}" name="${Value.Name}" value="${Value.Value}"/>`;
                         tmp += `</label>`;
@@ -95,7 +143,7 @@ $(function () {
                     }
                     //TimeSpan
                     else if (Value.type == "TimeSpan") {
-                        tmp += `<label>${Value.Name}</label><br/>`;
+                        tmp += `<label>${visibleName}</label><br/>`;
                         tmp += `<label for="${prop.Name}_${Value.Name}">`;
                         tmp += `<input type="time" id="${prop.Name}_${Value.Name}" name="${Value.Name}" value="${Value.Value}"/>`;
                         tmp += `</label>`;
@@ -144,9 +192,9 @@ $(function () {
                 event.preventDefault();
                 $("#Loader").show();
                 const form = SerializeForm(this);
-                console.log(form);
+                //console.log(form);
                 $.post("modifyModuleSettings", form, function (result) {
-                    console.log(result);
+                    //console.log(result);
                     if (result.Response.Status)
                         $('#' + result.Response.Name + "_isRunning").removeClass("red-text").addClass("green-text");
                     else
@@ -156,7 +204,7 @@ $(function () {
                 }, "JSON");
             });
             $(".noActionForm :input").change(function (event) {
-                console.log(event.target);
+                //console.log(event.target);
                 $(this).submit();
             });
             $("#Loader").hide();
@@ -220,7 +268,7 @@ $(function () {
                 }, "JSON");
             });
             pauseButton(result.Response.Pause);
-            
+            //TODO animated switch
         },"JSON");
     }
     

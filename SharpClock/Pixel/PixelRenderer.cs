@@ -24,6 +24,7 @@ namespace SharpClock
         public PixelModule Current { get; private set; }
         public bool IsRunning { get; private set; } = false;
         public bool Pause { get; set; } = false;
+        public bool AnimatedSwitching { get; set; } = false;
         public PixelModule[] GetModules { get => modules.ToArray(); }
 
         public PixelRenderer(IPixelDraw Screen)
@@ -54,14 +55,14 @@ namespace SharpClock
                     modules.Add(settingModule);
                     settingModule.Start(Program.UpTime);
                     SwitchModule(settingModule, true);
-                    modules.Remove(settingModule);
-                    new System.Threading.Tasks.Task(() =>
+                    new Task(() =>
                     {
                         while (settingModule.IsRunning)
                         {
                             if (Current != settingModule)
                                 settingModule.Stop();
                         }
+                        modules.Remove(settingModule);
                     }).Start();
                     break;
                 case ButtonId.Pause:
@@ -158,7 +159,9 @@ namespace SharpClock
             //}
             IsReady = true;
 
-            Screen.Brightness = new Config().Brightness;
+            var cfg = new Config();
+            Screen.Brightness = cfg.Brightness;
+            AnimatedSwitching = cfg.AnimatedSwitching;
             Logger.Log(ConsoleColor.Cyan, "System Ready!");
             drawThread = new Thread(Render);
             LoadingAnimation.Stop();
@@ -186,6 +189,7 @@ namespace SharpClock
             drawThread.Start();
         }
         string[] moduleOrder;
+        int currentModuleNumber = 0;
         void Render()
         {
             var config = new Config();
@@ -201,17 +205,16 @@ namespace SharpClock
                     modules.Add(new NullModule());
                 }
 
-                List<PixelModule> list = modules.ToList();
-                for (int i = 0; i < list.Count; i++)
+                for (currentModuleNumber = 0; currentModuleNumber < modules.Count; currentModuleNumber++)
                 {
                     if (stop)
                         break;
 
-                    Current = list[i];
+                    Current = modules[currentModuleNumber];
                     
                     if (nextModule || !Current.IsRunning || !Current.Visible)
                     {
-                        //Logger.Log("Zmiana modulu!!!");
+                        //Logger.Log("Zmiana modulu!!! next");
                         //Logger.Log($"Name: {module.Name}, ON: {module.IsRunning}, Visible: {module.Visible}");
                         nextModule = false;
                         continue;
@@ -235,9 +238,9 @@ namespace SharpClock
                         int delay = elapsed > 0 ? elapsed : 0;
                         Thread.Sleep(delay);
                     }
-                    if (!stop)
+                    if (!stop && AnimatedSwitching)//Zbugowane jak ...
                     {
-                        int offset = -9;
+                        int offset = -8;
                         timer.Restart();
                         new Task(async () =>
                         {
@@ -249,22 +252,22 @@ namespace SharpClock
                         }).Start();
                         while (offset < 0)
                         {
-                            int nextModuleNr = i + 1;
-                            while (!list[nextModuleNr].IsRunning || !list[nextModuleNr].Visible)
+                            int nextModuleNr = currentModuleNumber + 1 >= modules.Count ? 0 : currentModuleNumber + 1;
+                            while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible)
                             {
-                                nextModuleNr = nextModuleNr >= list.Count - 1 ? 0 : nextModuleNr + 1;
+                                nextModuleNr = nextModuleNr >= modules.Count - 1 ? 0 : nextModuleNr + 1;
                             }
 
                             int start = (int)timer.ElapsedMilliseconds;
 
                             Screen.Clear();
                             Current.Draw(timer);
-                            Screen.Draw(offset + 10);
-
+                            Screen.Draw(offset + 9);
+                            
                             Screen.Clear();
-                            list[nextModuleNr].Draw(timer);
+                            modules[nextModuleNr].Draw(timer);
                             Screen.Draw(offset);
-
+                            
                             int end = (int)timer.ElapsedMilliseconds;
                             int elapsed = 33 - (end - start);
                             int delay = elapsed > 0 ? elapsed : 0;
@@ -284,10 +287,8 @@ namespace SharpClock
         {
             if (module.IsRunning)
             {
-                while (Current != module)
-                {
-                    NextModule();
-                }
+                Console.WriteLine(currentModuleNumber = modules.IndexOf(module)-1);
+                NextModule();
                 if (forcePause)
                     Pause = true;
                 return true;

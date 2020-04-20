@@ -11,10 +11,20 @@ namespace PixelWeather
 {
     public class PixelWeather : PixelModule
     {
+        [VisibleNameEnum(lang = "pl", values = new string[]{"Temp=Temperatura", "Humidity=Wilgotność", "Wind=Wiatr", "Pressure=Ciśnienie" })]
+        [VisibleNameEnum(lang = "en", values = new string[]{"Temp=Temperature", "Humidity=Humidity", "Wind=Wind", "Pressure=Pressure" })]
         public enum SubModule { Temp, Humidity, Wind, Pressure }
+        [VisibleNameEnum(lang = "pl", values = new string[] { "name=Nazwa", "id=Id", "cord=Współrzędne", "zip=Kod pocztowy" })]
+        [VisibleNameEnum(lang = "en", values = new string[] { "name=Name", "id=Id", "cord=Coordinates", "zip=Zip code" })]
         public enum LocationType { name, id, cord, zip }
+        [VisibleName(lang = "pl", value = "Pokaż")]
+        [VisibleName(lang = "en", value = "Show")]
         public SubModule ModuleToShow { get; set; } = SubModule.Temp;
+        [VisibleName(lang = "pl", value = "Lokalizacja")]
+        [VisibleName(lang = "en", value = "Location")]
         public string Location { get; set; } = "Warsaw,pl";
+        [VisibleName(lang = "pl", value = "Lokalizuj przez")]
+        [VisibleName(lang = "en", value = "Location by")]
         public LocationType LocationBy { get; set; } = LocationType.name;
         //public string debugTemp { get => weather?.Temperature; set { if (weather != null) weather.Temperature = value; } }
 

@@ -9,18 +9,25 @@ namespace PixelClock
 {
     public class PixelClock : PixelModule
     {
+        [VisibleName(lang="pl", value="Pokaż Sekundy")]
+        [VisibleName(lang="en", value="Show Seconds")]
+        public bool ShowSeconds { get; set; } = false;
+
+        [VisibleName(lang = "pl", value = "Budzik")]
+        [VisibleName(lang = "en", value = "Alarm")]
+        public TimeSpan Alarm { get; set; } = new TimeSpan(0, 0, 0);
+
+        [VisibleName(lang = "pl", value = "Włącz Budzik")]
+        [VisibleName(lang = "en", value = "Enable Alarm")]
+        public bool EnableTimer { get; set; } = false;
+
         DateTime Date;
 
-        public bool ShowSeconds { get; set; } = false;
-        
         GifImage clockImage;
         GifImage alarmImage;
 
-        public TimeSpan Alarm { get; set; } = new TimeSpan(0, 0, 0);
         TimeSpan showAlarmScreen = new TimeSpan(0, 0, 0);
         bool playAlarm = false;
-
-        public bool EnableTimer { get; set; } = false;
 
         public PixelClock()
         {
@@ -40,6 +47,7 @@ namespace PixelClock
             }
             if (playAlarm)
             {
+                Visible = true;
                 pixelRenderer.SwitchModule(this);
                 GPIOevents.EnableBuzzer();
             }

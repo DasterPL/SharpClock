@@ -30,18 +30,19 @@ namespace SharpClock
         }
 
         Stopwatch Stopwatch;
+
         public string Name { get => this.GetType().Name; }
         public string Icon { get; set; } = "view_module";
+        
+        [VisibleName(lang = "pl", value = "Widoczny")]
+        [VisibleName(lang = "en", value = "Visible")]
         public bool Visible { get; set; } = true;
+        [VisibleName(lang = "pl", value = "Jak długo ma się wyświetlać w milisekundach")]
+        [VisibleName(lang = "en", value = "How long it should display in miliseconds")]
         public int Timer { get; set; } = 10000;
         protected int Tickrate { get; set; } = 1000;
         public bool IsRunning { get; private set; } = false;
         CancellationTokenSource tokenSource;
-
-        protected PixelModule()
-        {
-            //GPIOevents.OnButtonClick += GPIOevents_OnButtonClick;
-        }
 
         public virtual void OnButtonClick(ButtonId button)
         {
