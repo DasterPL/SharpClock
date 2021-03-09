@@ -118,7 +118,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
+    <Compile Include="WebPage\POST_File.cs" />
     <None Include="bundleconfig.json" />
+    <None Include="ClassDiagram1.cd" />
     <None Include="img\font_size">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

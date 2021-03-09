@@ -8,9 +8,6 @@ using System.Threading.Tasks;
 
 namespace SharpClock
 {
-    /// <summary>
-    /// Metoda Szablonowa?
-    /// </summary>
     public abstract class PixelModule
     {
         static protected IPixelDraw Screen { get; private set; }

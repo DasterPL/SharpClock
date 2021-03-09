@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
@@ -32,7 +31,7 @@ namespace PixelClock
         public PixelClock()
         {
             Icon = "access_time";
-            var assembly = Assembly.GetExecutingAssembly();
+            //var assembly = Assembly.GetExecutingAssembly();
 
             clockImage = new GifImage(Image.FromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream($"PixelClock.Clock.clock.gif")));
             alarmImage = new GifImage(Image.FromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream($"PixelClock.Clock.alarm.gif")));

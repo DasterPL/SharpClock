@@ -7,9 +7,6 @@ using System.Threading.Tasks;
 
 namespace SharpClock
 {
-    /// <summary>
-    /// NullObject
-    /// </summary>
     public class NullModule : PixelModule
     {
         public override void Draw(Stopwatch stopwatch)

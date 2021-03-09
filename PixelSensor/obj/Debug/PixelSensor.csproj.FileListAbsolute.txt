@@ -16,3 +16,4 @@ C:\Users\User\Desktop\SharpClock\PixelSensor\obj\Debug\PixelSensor.csprojAssembl
 C:\Users\User\Desktop\SharpClock\PixelSensor\obj\Debug\PixelSensor.csproj.CopyComplete
 C:\Users\User\Desktop\SharpClock\PixelSensor\obj\Debug\PixelSensor.dll
 C:\Users\User\Desktop\SharpClock\PixelSensor\obj\Debug\PixelSensor.pdb
+C:\Users\User\Desktop\SharpClock\PixelSensor\obj\Debug\PixelSensor.csproj.CoreCompileInputs.cache

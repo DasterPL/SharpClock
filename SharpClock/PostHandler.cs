@@ -225,8 +225,15 @@ namespace SharpClock
                     new Task(async () =>
                     {
                         await Task.Delay(3000);
+                        
+                        var unixFileInfo = new Mono.Unix.UnixFileInfo(mName);
+                        unixFileInfo.SetOwner(new Mono.Unix.UnixUserInfo("pi"));
+                         
                         PixelRenderer.Pixel.LoadModule(mName);
                     }).Start();
+                    break;
+                case "/RemoveDll":
+                    throw new NotImplementedException();
                     break;
                 case "/GetDlls":
                     var modulesFiles = Directory.GetFiles("Modules/");
