@@ -3,3 +3,4 @@ C:\Users\User\Desktop\SharpClock\PixelWeather\bin\Debug\PixelWeather.pdb
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.csprojAssemblyReference.cache
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.dll
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.pdb
+C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.csproj.CoreCompileInputs.cache

@@ -131,6 +131,13 @@ namespace SharpClock
                         {
                             tmp.Start(Program.UpTime);
                         }
+                        if (modules.Any(m => m.Name == tmp.Name))
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{tmp.Name}]:", ConsoleColor.DarkYellow, "exist - updateing!");
+                            var module = modules.Find(m => m.Name == tmp.Name);
+                            module.Stop();
+                            modules.Remove(module);
+                        }
                         modules.Add(tmp);
                     }
                 }

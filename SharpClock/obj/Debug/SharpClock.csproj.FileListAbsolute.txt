@@ -33,3 +33,4 @@ C:\Users\User\Desktop\SharpClock\SharpClock\bin\Debug\Unosquare.WiringPi.xml
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.csprojAssemblyReference.cache
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.csproj.CopyComplete
 C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.exe
+C:\Users\User\Desktop\SharpClock\SharpClock\obj\Debug\SharpClock.csproj.CoreCompileInputs.cache
