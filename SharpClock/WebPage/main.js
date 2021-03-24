@@ -20,9 +20,18 @@ $(function () {
             options: "Options"
         }
     };
-    let lang = languageDictionary.en;
-    if (navigator.language == "pl-PL")
-        lang = languageDictionary.pl;
+    let lang;
+    switch (navigator.language) {
+        case "pl-PL":
+        case "pl":
+        case "PL":
+            lang = languageDictionary.pl;
+            break;
+        default:
+            lang = languageDictionary.en;
+            break;
+    }
+    window.dLang = lang;
     //$("#Loader").hide();
     LoadProperties();
     LoadModuleList();

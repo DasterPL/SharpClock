@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram MajorVersion="1" MinorVersion="1">
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
   <Class Name="SharpClock.Config">
-    <Position X="2.75" Y="0.5" Width="1.5" />
+    <Position X="3.25" Y="0.5" Width="2" />
     <NestedTypes>
       <Class Name="SharpClock.Config.Module" Collapsed="true">
         <TypeIdentifier>
@@ -15,14 +15,14 @@
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.Bluetooth">
-    <Position X="8" Y="5.5" Width="1.5" />
+    <Position X="10" Y="10.75" Width="1.75" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAA=</HashCode>
       <FileName>GPIO\Bluetooth.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.GPIO" BaseTypeListCollapsed="true">
-    <Position X="8" Y="2.25" Width="1.5" />
+    <Position X="0.5" Y="13.75" Width="2.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAABAAAACAAAACAAAAAIAIEAAAAAAAAAAA=</HashCode>
       <FileName>GPIO\GPIO.cs</FileName>
@@ -30,14 +30,14 @@
     <Lollipop Position="0.315" Collapsed="true" />
   </Class>
   <Class Name="SharpClock.LoadingAnimation">
-    <Position X="2.75" Y="4.75" Width="1.5" />
+    <Position X="3.5" Y="8.75" Width="1.5" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAgQAAAIAAAAAAAAAI=</HashCode>
       <FileName>LoadingAnimation.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.PixelDraw" BaseTypeListCollapsed="true">
-    <Position X="6.25" Y="3.75" Width="1.5" />
+    <Position X="8.25" Y="3.75" Width="3.25" />
     <NestedTypes>
       <Class Name="SharpClock.PixelDraw.Font_new" Collapsed="true">
         <TypeIdentifier>
@@ -49,18 +49,18 @@
       <HashCode>AAIAABAAAAACAoAABIAhAAEAAAAAAABAAUAABAFCAIg=</HashCode>
       <FileName>Pixel\PixelDraw.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.2" Collapsed="true" />
+    <Lollipop Position="0.242" />
   </Class>
   <Class Name="SharpClock.PixelRenderer" BaseTypeListCollapsed="true">
-    <Position X="4.5" Y="4.5" Width="1.5" />
+    <Position X="5.5" Y="4.5" Width="2.5" />
     <TypeIdentifier>
       <HashCode>AAIgAAAAkCAECAAADBDBQAAAQAEgAAAGKBAAAAAAAEA=</HashCode>
       <FileName>Pixel\PixelRenderer.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Position="0.648" Collapsed="true" />
+    <Lollipop Position="0.304" />
   </Class>
   <Class Name="SharpClock.SettingModule" BaseTypeListCollapsed="true">
-    <Position X="11" Y="2.25" Width="1.5" />
+    <Position X="3.5" Y="13.25" Width="2.25" />
     <NestedTypes>
       <Class Name="SharpClock.SettingModule.Function" Collapsed="true">
         <TypeIdentifier>
@@ -75,21 +75,21 @@
     <Lollipop Position="0.924" Collapsed="true" />
   </Class>
   <Class Name="SharpClock.PostHandler">
-    <Position X="2.75" Y="9.25" Width="1.5" />
+    <Position X="0.5" Y="9.75" Width="2.25" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAACAA=</HashCode>
       <FileName>PostHandler.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.Program">
-    <Position X="1" Y="0.5" Width="1.5" />
+    <Position X="1" Y="0.5" Width="2" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAEAAAAAAAAAAACACgAAAAAAAAAAABACAAAA=</HashCode>
       <FileName>Program.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.HttpServer">
-    <Position X="1" Y="4.75" Width="1.5" />
+    <Position X="0.5" Y="4.75" Width="2.75" />
     <NestedTypes>
       <Delegate Name="SharpClock.HttpServer.PostRequest" Collapsed="true">
         <TypeIdentifier>
@@ -108,7 +108,7 @@
     </TypeIdentifier>
   </Class>
   <Class Name="SharpClock.GifImage">
-    <Position X="2.75" Y="7" Width="1.5" />
+    <Position X="7.75" Y="11.75" Width="2" />
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.Logger">
@@ -116,46 +116,46 @@
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.NullModule" Collapsed="true">
-    <Position X="11" Y="1.25" Width="1.5" />
+    <Position X="6" Y="13.25" Width="1.5" />
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.PixelModule" Collapsed="true">
-    <Position X="9.75" Y="0.5" Width="1.5" />
+    <Position X="6" Y="11.25" Width="1.5" />
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.VisibleName">
-    <Position X="9.75" Y="6.5" Width="1.5" />
+    <Position X="3.5" Y="4.75" Width="1.5" />
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.VisibleNameEnum">
-    <Position X="9.75" Y="8.5" Width="1.5" />
+    <Position X="3.5" Y="6.75" Width="1.75" />
     <TypeIdentifier />
   </Class>
   <Class Name="SharpClock.POST_File">
-    <Position X="1" Y="9.75" Width="1.5" />
+    <Position X="3.25" Y="11" Width="2" />
     <TypeIdentifier>
       <HashCode>AEAAAAAAAAAAAAAAAAAAAAAEAAAAAAAABAAAAAAAAAA=</HashCode>
       <FileName>WebPage\POST_File.cs</FileName>
     </TypeIdentifier>
   </Class>
   <Interface Name="SharpClock.IGPIO">
-    <Position X="8" Y="0.5" Width="1.5" />
+    <Position X="0.5" Y="12" Width="2.5" />
     <TypeIdentifier />
   </Interface>
   <Interface Name="SharpClock.IPixelDraw">
-    <Position X="6.25" Y="0.5" Width="1.5" />
+    <Position X="8.25" Y="0.5" Width="2.5" />
     <TypeIdentifier />
   </Interface>
   <Interface Name="SharpClock.IPixelRenderer">
-    <Position X="4.5" Y="0.5" Width="1.5" />
+    <Position X="5.5" Y="0.5" Width="2.25" />
     <TypeIdentifier />
   </Interface>
   <Enum Name="SharpClock.ButtonId">
-    <Position X="8" Y="7.5" Width="1.5" />
+    <Position X="8.25" Y="9.5" Width="1.5" />
     <TypeIdentifier />
   </Enum>
   <Delegate Name="SharpClock.ButtonEventArgs">
-    <Position X="8" Y="9.5" Width="1.5" />
+    <Position X="10" Y="9.5" Width="1.5" />
     <TypeIdentifier />
   </Delegate>
   <Font Name="Segoe UI" Size="9" />
