@@ -28,7 +28,7 @@ namespace SharpClock
 
         Stopwatch Stopwatch;
 
-        public string Name { get => this.GetType().Name; }
+        public string Name { get => GetType().Name; }
         public string Icon { get; set; } = "view_module";
         
         [VisibleName(lang = "pl", value = "Widoczny")]

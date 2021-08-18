@@ -2,3 +2,7 @@ C:\Users\User\Desktop\SharpClock\PixelNativeModules\bin\Debug\PixelNativeModules
 C:\Users\User\Desktop\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.csprojAssemblyReference.cache
 C:\Users\User\Desktop\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.dll
 C:\Users\User\Desktop\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelNativeModules\bin\Debug\PixelNativeModules.dll
+E:\Programowanie\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelNativeModules\obj\Debug\PixelNativeModules.dll

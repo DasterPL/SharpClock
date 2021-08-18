@@ -4,3 +4,9 @@ C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.csprojAssemblyR
 C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.dll
 C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.pdb
 C:\Users\User\Desktop\SharpClock\PixelClock\obj\Debug\PixelClock.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelClock\bin\Debug\PixelClock.dll
+E:\Programowanie\SharpClock\PixelClock\bin\Debug\PixelClock.pdb
+E:\Programowanie\SharpClock\PixelClock\obj\Debug\PixelClock.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\PixelClock\obj\Debug\PixelClock.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelClock\obj\Debug\PixelClock.dll
+E:\Programowanie\SharpClock\PixelClock\obj\Debug\PixelClock.pdb

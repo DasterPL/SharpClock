@@ -1,0 +1,9 @@
+E:\Programowanie\SharpClock\FoxesCloud\bin\Debug\FoxesCloud.dll
+E:\Programowanie\SharpClock\FoxesCloud\bin\Debug\FoxesCloud.pdb
+E:\Programowanie\SharpClock\FoxesCloud\obj\Debug\FoxesCloud.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\FoxesCloud\obj\Debug\FoxesCloud.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\FoxesCloud\obj\Debug\FoxesCloud.dll
+E:\Programowanie\SharpClock\FoxesCloud\obj\Debug\FoxesCloud.pdb
+E:\Programowanie\SharpClock\FoxesCloud\bin\Debug\Newtonsoft.Json.dll
+E:\Programowanie\SharpClock\FoxesCloud\bin\Debug\Newtonsoft.Json.xml
+E:\Programowanie\SharpClock\FoxesCloud\obj\Debug\FoxesCloud.csproj.CopyComplete
