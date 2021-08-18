@@ -141,7 +141,7 @@ namespace SharpClock
                 try
                 {
                     Logger.Log(ConsoleColor.Yellow, $"Prop: {prop.Name} Value: {prop.GetValue(module).ToString()}");
-                    if (prop.Name == "Name" || prop.Name == "IsRunning")
+                    if (prop.Name == "Name" || prop.Name == "IsRunning" || prop.Name == "Icon")
                     {
                         continue;
                     }

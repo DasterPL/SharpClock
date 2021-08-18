@@ -4,3 +4,9 @@ C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.csprojAssemblyRef
 C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.dll
 C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.pdb
 C:\Users\User\Desktop\SharpClock\PixelText\obj\Debug\PixelText.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelText\bin\Debug\PixelText.dll
+E:\Programowanie\SharpClock\PixelText\bin\Debug\PixelText.pdb
+E:\Programowanie\SharpClock\PixelText\obj\Debug\PixelText.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\PixelText\obj\Debug\PixelText.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelText\obj\Debug\PixelText.dll
+E:\Programowanie\SharpClock\PixelText\obj\Debug\PixelText.pdb

@@ -4,3 +4,9 @@ C:\Users\User\Desktop\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.csprojAss
 C:\Users\User\Desktop\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.dll
 C:\Users\User\Desktop\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.pdb
 C:\Users\User\Desktop\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelCalendar\bin\Debug\PixelCalendar.dll
+E:\Programowanie\SharpClock\PixelCalendar\bin\Debug\PixelCalendar.pdb
+E:\Programowanie\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.dll
+E:\Programowanie\SharpClock\PixelCalendar\obj\Debug\PixelCalendar.pdb

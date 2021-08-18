@@ -4,3 +4,9 @@ C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.csprojAssem
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.dll
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.pdb
 C:\Users\User\Desktop\SharpClock\PixelWeather\obj\Debug\PixelWeather.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelWeather\bin\Debug\PixelWeather.dll
+E:\Programowanie\SharpClock\PixelWeather\bin\Debug\PixelWeather.pdb
+E:\Programowanie\SharpClock\PixelWeather\obj\Debug\PixelWeather.csproj.AssemblyReference.cache
+E:\Programowanie\SharpClock\PixelWeather\obj\Debug\PixelWeather.csproj.CoreCompileInputs.cache
+E:\Programowanie\SharpClock\PixelWeather\obj\Debug\PixelWeather.dll
+E:\Programowanie\SharpClock\PixelWeather\obj\Debug\PixelWeather.pdb
