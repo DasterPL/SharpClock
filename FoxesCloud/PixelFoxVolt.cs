@@ -59,12 +59,12 @@ namespace FoxesCloud
             if (dataErrCount > 5)
             {
                 dataErrCount = 0;
-                Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.Red, "[Error] ", ConsoleColor.White, "5 attemps have benn made, data has not been downloaded, stopping the module!");
+                Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.Red, "[Error] ", ConsoleColor.White, "5 attemps have been made, data has not been downloaded, stopping the module!");
                 Stop();
             }
             if (token == null)
             {
-                token = getToken("daster", "qsxd2hll");
+                token = getToken("###", "###");
             }
             string stationID = getDropList()[0];
             json = getData(stationID);
