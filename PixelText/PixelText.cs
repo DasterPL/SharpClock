@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing;
 using SharpClock;
 
@@ -6,30 +6,35 @@ namespace PixelText
 {
     public class PixelText : PixelModule
     {
-        [VisibleName(lang = "pl", value = "Tekst")]
-        [VisibleName(lang = "en", value = "Text")]
         public string Text { get; set; } = "Sharp Clock";
-        [VisibleName(lang = "pl", value = "Wstrzymaj")]
-        [VisibleName(lang = "en", value = "Pause")]
         public bool Pause { get; set; } = false;
-        [VisibleName(lang = "pl", value = "Kolor tekstu")]
-        [VisibleName(lang = "en", value = "Text Color")]
         public Color Color { get; set; } = Color.White;
-        [VisibleName(lang = "pl", value = "Szybkość Przewijania")]
-        [VisibleName(lang = "en", value = "Scroll speed")]
         public int Speed { get => Tickrate; set => Tickrate = value; }
 
-        int pos = 2;
+        private int pos = 2;
+
         public PixelText()
         {
             Icon = "message";
+
+            Settings
+                .Add(nameof(Text), () => Text, v => Text = v)
+                    .Label("pl", "Tekst").Label("en", "Text").Multiline()
+                .Add(nameof(Pause), () => Pause, v => Pause = v)
+                    .Label("pl", "Wstrzymaj").Label("en", "Pause")
+                .Add(nameof(Color), () => Color, v => Color = v)
+                    .Label("pl", "Kolor tekstu").Label("en", "Text Color")
+                .Add(nameof(Speed), () => Speed, v => Speed = v)
+                    .Label("pl", "Szybkość Przewijania").Label("en", "Scroll speed").StepSize(10);
         }
+
         public override void Draw(Stopwatch stopwatch)
         {
             if (stopwatch.ElapsedMilliseconds < Tickrate)
                 pos = 1;
             Screen.SetText(Text, Color, pos);
         }
+
         protected override void Update(Stopwatch stopwatch)
         {
             int len = Screen.TextLength(Text);
@@ -52,6 +57,7 @@ namespace PixelText
                 Timer = (len * Tickrate * 2) + (len < 32 ? 32 - len : 0) * Tickrate;
             }
         }
+
         public override void OnButtonClick(ButtonId button)
         {
             base.OnButtonClick(button);

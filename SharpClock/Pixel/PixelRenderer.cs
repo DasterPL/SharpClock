@@ -6,19 +6,17 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace SharpClock
 {
     class PixelRenderer : IPixelRenderer
     {
-        public static PixelRenderer Pixel { get; private set; }
+        public static IPixelRenderer Pixel { get; private set; }
         Thread drawThread;
         List<PixelModule> modules = new List<PixelModule>();
         IPixelDraw Screen;
         bool stop = false;
         bool nextModule = false;
-        //Config Config = new Config();
 
         public bool IsReady { get; private set; } = false;
         public PixelModule Current { get; private set; }
@@ -44,7 +42,7 @@ namespace SharpClock
         private void GPIOevents_OnButtonClick(ButtonId button)
         {
             GPIO.GPIOevents.EnableBuzzer(1, 20, 0);
-            Console.WriteLine(button);
+            Logger.Log(ConsoleColor.DarkMagenta, "Button: ", ConsoleColor.White, button.ToString());
             switch (button)
             {
                 case ButtonId.Next:
@@ -55,15 +53,16 @@ namespace SharpClock
                     modules.Add(settingModule);
                     settingModule.Start(Program.UpTime);
                     SwitchModule(settingModule, true);
-                    new Task(() =>
+                    new Thread(() =>
                     {
                         while (settingModule.IsRunning)
                         {
                             if (Current != settingModule)
                                 settingModule.Stop();
+                            Thread.Sleep(100);
                         }
                         modules.Remove(settingModule);
-                    }).Start();
+                    }) { IsBackground = true }.Start();
                     break;
                 case ButtonId.Pause:
                     Pause = !Pause;
@@ -81,53 +80,45 @@ namespace SharpClock
         }
         public void LoadModule(string absolutePath)
         {
-            Config Config = new Config();
             try
             {
                 Assembly dll = Assembly.LoadFile(absolutePath);
 
                 foreach (Type type in dll.GetExportedTypes())
                 {
-                    Console.WriteLine($"Found Type: {type.Name}");
-                    if (type.BaseType == typeof(PixelModule))
+                    if (type.BaseType != typeof(PixelModule)) continue;
+                    try
                     {
                         PixelModule tmp = (PixelModule)Activator.CreateInstance(type);
                         Logger.Log(ConsoleColor.Blue, $"[{type.Name}]:", ConsoleColor.White, "Loading module");
-                        var cfg = Config.GetModule(type.Name);
-                        if (cfg == null)
+                        var moduleCfg = Config.Instance.GetModule(type.Name);
+                        if (moduleCfg == null)
                         {
                             Logger.Log(ConsoleColor.Blue, $"[{type.Name}]", ConsoleColor.Cyan, " Config not found, creating new");
-                            Config.CreateModule(tmp);
-                            cfg = Config.GetModule(type.Name);
+                            Config.Instance.CreateModule(tmp);
                         }
                         else
                         {
-                            //Konfiguracja początkowa modułów
-                            foreach (var param in cfg.Params)
+                            foreach (var entry in tmp.Settings.All)
                             {
-                                var prop = type.GetProperty(param.Key);
-                                if (prop.PropertyType == typeof(int))
-                                    prop.SetValue(tmp, int.Parse(param.Value));
-                                else if (prop.PropertyType == typeof(bool))
-                                    prop.SetValue(tmp, bool.Parse(param.Value));
-                                else if (prop.PropertyType == typeof(string))
-                                    prop.SetValue(tmp, param.Value);
-                                else if (prop.PropertyType == typeof(Color))
-                                    prop.SetValue(tmp, ColorTranslator.FromHtml(param.Value));
-                                else if (prop.PropertyType.BaseType == typeof(Enum))
-                                    prop.SetValue(tmp, Enum.Parse(prop.PropertyType, param.Value));
-                                else if (prop.PropertyType == typeof(TimeSpan))
+                                if (!moduleCfg.Params.TryGetValue(entry.Key, out string savedValue))
+                                    continue;
+                                try
                                 {
-                                    var time = Array.ConvertAll(param.Value.Split(':'), int.Parse);
-                                    prop.SetValue(tmp, new TimeSpan(time[0], time[1], time[2]));
+                                    entry.Set(savedValue);
+                                    Logger.Log(ConsoleColor.DarkMagenta, "Setting: ", ConsoleColor.White, $"{entry.Key} = {entry.Get()}, Type: {entry.ValueType.Name}");
                                 }
-                                else
-                                    Logger.Log(ConsoleColor.Blue, $"[{tmp.Name}]:", ConsoleColor.Red, "Undefined Type!");
-                                Logger.Log(ConsoleColor.DarkMagenta, "Setting: ", ConsoleColor.White, $"{prop.Name} = {prop.GetValue(tmp)}, Type: {prop.PropertyType.Name}");
+                                catch (Exception ex)
+                                {
+                                    Logger.Log(ConsoleColor.Blue, $"[{tmp.Name}]:", ConsoleColor.Red, $"[Skip] Failed to set {entry.Key} = \"{savedValue}\": {ex.Message}");
+                                }
                             }
                         }
 
-                        if (cfg.Start)
+                        if (moduleCfg == null)
+                            moduleCfg = Config.Instance.GetModule(type.Name);
+
+                        if (moduleCfg?.Start == true)
                         {
                             tmp.Start(Program.UpTime);
                         }
@@ -140,33 +131,33 @@ namespace SharpClock
                         }
                         modules.Add(tmp);
                     }
+                    catch (Exception e)
+                    {
+                        Logger.Log(ConsoleColor.Blue, $"[{type.Name}]:", ConsoleColor.Red, $"[Error] Failed to load module: {e.Message}");
+                    }
                 }
             }
             catch (Exception e)
             {
-                Logger.Log(ConsoleColor.Red, e.Message);
+                Logger.Log(ConsoleColor.Red, $"Failed to load assembly: {e.Message}");
             }
         }
         public void Start()
         {
-            //Wczytywanie modułów
             modules.Clear();
 
-            var modulesFiles = Directory.GetFiles("Modules/");
-            foreach (var moduleFile in modulesFiles)
+            string modulesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Modules");
+            if (Directory.Exists(modulesDir))
             {
-                var absolutePath = AppDomain.CurrentDomain.BaseDirectory + moduleFile;
-                Logger.Log(ConsoleColor.Green, $"Loading: {moduleFile}");
-                LoadModule(absolutePath);
+                foreach (var absolutePath in Directory.GetFiles(modulesDir, "*.dll"))
+                {
+                    Logger.Log(ConsoleColor.Green, $"Loading: {Path.GetFileName(absolutePath)}");
+                    LoadModule(absolutePath);
+                }
             }
-            //var sql = new SQL();
-            //foreach (var module in Config.Modules)
-            //{
-            //    LoadModule(sql.GetModuleFromDB(module.Class));
-            //}
             IsReady = true;
 
-            var cfg = new Config();
+            var cfg = Config.Instance;
             Screen.Brightness = cfg.Brightness;
             AnimatedSwitching = cfg.AnimatedSwitching;
             Logger.Log(ConsoleColor.Cyan, "System Ready!");
@@ -178,7 +169,7 @@ namespace SharpClock
         {
             Logger.Log("Stopping Renderer");
             stop = true;
-            while (IsRunning) ;
+            while (IsRunning) Thread.Sleep(10);
             Logger.Log("Stopping modules");
             foreach (var module in modules)
             {
@@ -191,15 +182,17 @@ namespace SharpClock
         public void Reload()
         {
             stop = true;
-            while (IsRunning) ;
+            while (IsRunning) Thread.Sleep(10);
             drawThread = new Thread(Render);
             drawThread.Start();
         }
         string[] moduleOrder;
         int currentModuleNumber = 0;
+        readonly NullModule _nullModule = new NullModule();
+        readonly Stopwatch _nullTimer = Stopwatch.StartNew();
         void Render()
         {
-            var config = new Config();
+            var config = Config.Instance;
             stop = false;
             IsRunning = true;
 
@@ -207,9 +200,16 @@ namespace SharpClock
             modules = modules.OrderBy(m => Array.IndexOf(moduleOrder, m.Name)).ToList();
             while (!stop)
             {
-                if (moduleOrder.Length == 0)
+                bool anyActive = modules.Any(m => m.IsRunning && m.Visible);
+                if (!anyActive)
                 {
-                    modules.Add(new NullModule());
+                    int start = (int)_nullTimer.ElapsedMilliseconds;
+                    Screen.Clear();
+                    _nullModule.Draw(_nullTimer);
+                    Screen.Draw();
+                    int elapsed = 33 - (int)(_nullTimer.ElapsedMilliseconds - start);
+                    Thread.Sleep(elapsed > 0 ? elapsed : 0);
+                    continue;
                 }
 
                 for (currentModuleNumber = 0; currentModuleNumber < modules.Count; currentModuleNumber++)
@@ -218,16 +218,12 @@ namespace SharpClock
                         break;
 
                     Current = modules[currentModuleNumber];
-                    
+
                     if (nextModule || !Current.IsRunning || !Current.Visible)
                     {
-                        //Logger.Log("Zmiana modulu!!! next");
-                        //Logger.Log($"Name: {module.Name}, ON: {module.IsRunning}, Visible: {module.Visible}");
                         nextModule = false;
                         continue;
                     }
-                    //TODO Night mode
-                    //Logger.Log(ConsoleColor.Cyan, $"Current module: {Current.Name}");
                     var timer = Stopwatch.StartNew();
                     while (Pause || timer.ElapsedMilliseconds < Current.Timer)
                     {
@@ -238,47 +234,41 @@ namespace SharpClock
                             break;
                         }
                         Screen.Clear();
-                        Current.Draw(timer);
+                        try { Current.Draw(timer); }
+                        catch (Exception ex)
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{Current.Name}]:", ConsoleColor.Red, $"[Draw Error] {ex.Message}");
+                            nextModule = true;
+                        }
                         Screen.Draw();
                         int end = (int)timer.ElapsedMilliseconds;
                         int elapsed = 33 - (end - start);
                         int delay = elapsed > 0 ? elapsed : 0;
                         Thread.Sleep(delay);
                     }
-                    if (!stop && AnimatedSwitching)//Zbugowane jak ...
+                    if (!stop && AnimatedSwitching && modules.Any(m => m.IsRunning && m.Visible))
                     {
-                        int offset = -8;
-                        timer.Restart();
-                        new Task(async () =>
-                        {
-                            while (offset <= 0)
-                            {
-                                offset++;
-                                await Task.Delay(100);
-                            }
-                        }).Start();
-                        while (offset < 0)
-                        {
-                            int nextModuleNr = currentModuleNumber + 1 >= modules.Count ? 0 : currentModuleNumber + 1;
-                            while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible)
-                            {
-                                nextModuleNr = nextModuleNr >= modules.Count - 1 ? 0 : nextModuleNr + 1;
-                            }
+                        var currentBuffer = Screen.GetBuffer();
 
-                            int start = (int)timer.ElapsedMilliseconds;
+                        int nextModuleNr = currentModuleNumber + 1 >= modules.Count ? 0 : currentModuleNumber + 1;
+                        while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible)
+                            nextModuleNr = nextModuleNr >= modules.Count - 1 ? 0 : nextModuleNr + 1;
 
-                            Screen.Clear();
-                            Current.Draw(timer);
-                            Screen.Draw(offset + 9);
-                            
-                            Screen.Clear();
-                            modules[nextModuleNr].Draw(timer);
-                            Screen.Draw(offset);
-                            
-                            int end = (int)timer.ElapsedMilliseconds;
-                            int elapsed = 33 - (end - start);
-                            int delay = elapsed > 0 ? elapsed : 0;
-                            Thread.Sleep(delay);
+                        Screen.Clear();
+                        try { modules[nextModuleNr].Draw(timer); }
+                        catch (Exception ex)
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{modules[nextModuleNr].Name}]:", ConsoleColor.Red, $"[Draw Error] {ex.Message}");
+                        }
+                        var nextBuffer = Screen.GetBuffer();
+
+                        var animTimer = Stopwatch.StartNew();
+                        for (int yOff = 1; yOff <= 8; yOff++)
+                        {
+                            int start = (int)animTimer.ElapsedMilliseconds;
+                            Screen.DrawFromBuffers(currentBuffer, nextBuffer, yOff);
+                            int elapsed = 33 - (int)(animTimer.ElapsedMilliseconds - start);
+                            Thread.Sleep(elapsed > 0 ? elapsed : 0);
                         }
                     }
                 }
@@ -288,28 +278,40 @@ namespace SharpClock
         public void NextModule()
         {
             nextModule = true;
-            while (nextModule) ;
+            while (nextModule) Thread.Sleep(10);
         }
         public bool SwitchModule(PixelModule module, bool forcePause = false)
         {
-            if (module.IsRunning)
-            {
-                Console.WriteLine(currentModuleNumber = modules.IndexOf(module)-1);
-                NextModule();
-                if (forcePause)
-                    Pause = true;
-                return true;
-            }
-            else
+            if (!module.IsRunning)
                 return false;
+            if (forcePause)
+                Pause = true;
+            if (Current == module)
+                return true;
+            currentModuleNumber = modules.IndexOf(module) - 1;
+            NextModule();
+            return true;
         }
         public PixelModule GetModule(string name)
         {
             return modules.Find(x => x.Name == name);
         }
+        public void UnloadModule(string dllFileName)
+        {
+            var toRemove = modules
+                .Where(m => Path.GetFileName(m.GetType().Assembly.Location) == dllFileName)
+                .ToList();
+            foreach (var m in toRemove)
+            {
+                if (m.IsRunning) m.Stop();
+                if (Current == m) NextModule();
+                modules.Remove(m);
+                Logger.Log(ConsoleColor.Blue, $"[{m.Name}]:", ConsoleColor.White, "Unloaded");
+            }
+        }
         public void UpdateConfig()
         {
-            new Config().EditModules(modules.ToArray());
+            Config.Instance.EditModules(modules.ToArray());
         }
     }
 }

@@ -30,20 +30,28 @@ namespace SharpClock
 
         public string Name { get => GetType().Name; }
         public string Icon { get; set; } = "view_module";
-        
-        [VisibleName(lang = "pl", value = "Widoczny")]
-        [VisibleName(lang = "en", value = "Visible")]
         public bool Visible { get; set; } = true;
-        [VisibleName(lang = "pl", value = "Jak długo ma się wyświetlać w milisekundach")]
-        [VisibleName(lang = "en", value = "How long it should display in miliseconds")]
         public int Timer { get; set; } = 10000;
         protected int Tickrate { get; set; } = 1000;
         public bool IsRunning { get; private set; } = false;
         CancellationTokenSource tokenSource;
 
+        public SettingsBuilder Settings { get; } = new SettingsBuilder();
+
+        protected PixelModule()
+        {
+            Settings
+                .Add(nameof(Visible), () => Visible, v => Visible = v)
+                    .Label("pl", "Widoczny").Label("en", "Visible")
+                .Add(nameof(Timer), () => Timer, v => Timer = v)
+                    .Label("pl", "Czas wyświetlania").Label("en", "Display time");
+        }
+
+        public virtual System.Collections.Generic.IDictionary<string, object> GetState() => null;
+
         public virtual void OnButtonClick(ButtonId button)
         {
-            Console.WriteLine($"Module: {Name} Button: {button.ToString()}");
+            Logger.Log(ConsoleColor.DarkMagenta, $"[{Name}]:", ConsoleColor.White, $"Button: {button}");
         }
 
         public void Start(Stopwatch stopwatch)
@@ -59,15 +67,23 @@ namespace SharpClock
                     while (!tokenSource.Token.IsCancellationRequested)
                     {
                         long start = stopwatch.ElapsedMilliseconds;
-                        Update(stopwatch);
+                        try
+                        {
+                            Update(stopwatch);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red, $"[Unhandled] {e.GetType().Name}: {e.Message}");
+                        }
                         long end = stopwatch.ElapsedMilliseconds;
                         try
                         {
-                            await Task.Delay(Tickrate - (int)(end - start), tokenSource.Token);
+                            int sleepMs = Math.Max(0, Tickrate - (int)(end - start));
+                            await Task.Delay(sleepMs, tokenSource.Token);
                         }
                         catch (TaskCanceledException)
                         {
-                            Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Stoped");
+                            Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Stopped");
                         }
                     }
                     IsRunning = false;
@@ -82,7 +98,7 @@ namespace SharpClock
             if (IsRunning)
             {
                 tokenSource.Cancel();
-                while (IsRunning) ;
+                while (IsRunning) Thread.Sleep(10);
             }
         }
         public virtual void Reload()

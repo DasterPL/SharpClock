@@ -69,6 +69,7 @@ namespace SharpClock
             BME280_REGISTER_CAL26 = 0xE1,  // R calibration stored in 0xE1-0xF0
 
             BME280_REGISTER_CONTROLHUMID = 0xF2,
+            BME280_REGISTER_STATUS = 0xF3,
             BME280_REGISTER_CONTROL = 0xF4,
             BME280_REGISTER_CONFIG = 0xF5,
 
@@ -106,27 +107,14 @@ namespace SharpClock
 
         private void Begin()
         {
-            //Read the device signature
             var ReadBuffer = bme280.ReadAddressByte((byte)eRegisters.BME280_REGISTER_CHIPID);
-            //Logger.Log("BMP280 Signature: " + ReadBuffer.ToString());
-
-
-            //Verify the device signature
             if (ReadBuffer != BME280_Signature)
-            {
+            if (ReadBuffer != BME280_Signature)
                 throw new Exception("BME280::Begin Signature Mismatch.");
-            }
 
-            //Set the initalize variable to true
             init = true;
-
-            //Read the coefficients table
             CalibrationData = ReadCoefficeints();
-
-            //Write control register
             WriteControlRegister();
-
-            //Write humidity control register
             WriteControlRegisterHumidity();
         }
         //Method to write 0x03 to the humidity control register
@@ -137,12 +125,19 @@ namespace SharpClock
             return;
         }
 
-        //Method to write 0x3F to the control register
+        // osrs_t=x1, osrs_p=x16, sleep mode — sets oversampling without triggering measurement
         private void WriteControlRegister()
         {
-            bme280.WriteAddressByte((byte)eRegisters.BME280_REGISTER_CONTROL, 0x3F);
+            bme280.WriteAddressByte((byte)eRegisters.BME280_REGISTER_CONTROL, 0x3C);
             Thread.Sleep(1);
-            return;
+        }
+
+        // Triggers one forced measurement and waits for completion (~40 ms), then chip returns to sleep
+        private void TriggerForcedMeasurement()
+        {
+            bme280.WriteAddressByte((byte)eRegisters.BME280_REGISTER_CONTROL, 0x3D);
+            while ((ReadByte((byte)eRegisters.BME280_REGISTER_STATUS) & 0x08) != 0)
+                Thread.Sleep(2);
         }
 
         //Method to read a 16-bit value from a register and return it in little endian format
@@ -184,9 +179,8 @@ namespace SharpClock
             CalibrationData.dig_H3 = ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H3_REG);
             CalibrationData.dig_H4 = (short)((ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H4_MSB) << 4) | (ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H4_LSB) & 0xF));
             CalibrationData.dig_H5 = (short)((ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H5_MSB) << 4) | (ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H5_LSB) >> 4));
-            CalibrationData.dig_H6 = ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H6_REG);
+            CalibrationData.dig_H6 = (sbyte)ReadByte((byte)eRegisters.BME280_REGISTER_DIG_H6_REG);
 
-            //await Task.Delay(1);
             Thread.Sleep(1);
             return CalibrationData;
         }
@@ -201,7 +195,8 @@ namespace SharpClock
 
             //The temperature is calculated using the compensation formula in the BMP280 datasheet
             var1 = ((adc_T / 16384.0) - (CalibrationData.dig_T1 / 1024.0)) * CalibrationData.dig_T2;
-            var2 = ((adc_T / 131072.0) - (CalibrationData.dig_T1 / 8192.0)) * CalibrationData.dig_T3;
+            var2 = (adc_T / 131072.0) - (CalibrationData.dig_T1 / 8192.0);
+            var2 = var2 * var2 * CalibrationData.dig_T3;
 
             t_fine = (int)(var1 + var2);
 
@@ -235,21 +230,6 @@ namespace SharpClock
             p = ((p + var1 + var2) >> 8) + ((long)CalibrationData.dig_P7 << 4);
             return p;
         }
-        // Returns humidity in %RH as unsigned 32 bit integer in Q22.10 format (22 integer and 10 fractional bits).
-        // Output value of “47445” represents 47445/1024 = 46.333 %RH
-        private int BME280_compensate_H_int32(Int32 adc_H)
-        {
-            int v_x1_u32r;
-            v_x1_u32r = (t_fine - ((int)76800));
-            v_x1_u32r = (((((adc_H << 14) - (((int)CalibrationData.dig_H4) << 20) - (((int)CalibrationData.dig_H5) * v_x1_u32r)) +
-            ((int)16384)) >> 15) * (((((((v_x1_u32r * ((int)CalibrationData.dig_H6)) >> 10) * (((v_x1_u32r *
-            ((int)CalibrationData.dig_H3)) >> 11) + ((int)32768))) >> 10) + ((int)2097152)) *
-            ((int)CalibrationData.dig_H2) + 8192) >> 14));
-            v_x1_u32r = (v_x1_u32r - (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7) * ((int)CalibrationData.dig_H1)) >> 4));
-            v_x1_u32r = (v_x1_u32r < 0 ? 0 : v_x1_u32r);
-            v_x1_u32r = (v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r);
-            return (int)(v_x1_u32r >> 12);
-        }
         double bme280_compensate_humidity_double(int v_uncom_humidity_s32)
         {
             int BME280_INIT_VALUE = 0;
@@ -278,8 +258,8 @@ namespace SharpClock
         }
         public float ReadTemperature()
         {
-            //Make sure the I2C device is initialized
             if (!init) Begin();
+            TriggerForcedMeasurement();
             //Read the MSB, LSB and bits 7:4 (XLSB) of the temperature from the BMP280 registers
             byte tmsb = ReadByte((byte)eRegisters.BME280_REGISTER_TEMPDATA_MSB);
             byte tlsb = ReadByte((byte)eRegisters.BME280_REGISTER_TEMPDATA_LSB);

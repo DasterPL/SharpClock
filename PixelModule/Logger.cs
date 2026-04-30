@@ -1,23 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpClock
 {
     public static class Logger
     {
-        static string file = "WebPage/System.log";
-        static public void Clear()
+        static readonly string LogDir = Environment.OSVersion.Platform == PlatformID.Unix
+            ? "/var/log/sharpclock"
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "sharpclock");
+
+        public static string LogFile { get; } = Path.Combine(LogDir, "sharpclock.log");
+
+        static DateTime currentDay = DateTime.Today;
+
+        static Logger()
         {
-            File.Delete(file);
+            Directory.CreateDirectory(LogDir);
+            // Rotate on startup if existing log is from a previous day
+            if (File.Exists(LogFile) && File.GetLastWriteTime(LogFile).Date < DateTime.Today)
+                Rotate(File.GetLastWriteTime(LogFile).Date);
         }
-        /// <summary>
-        /// Write specified string to standart output and Log file
-        /// </summary>
-        /// <param name="args">Value to write, Use ConsoleColor before Value to change color</param>
+
+        static void Rotate(DateTime day)
+        {
+            string archive = Path.Combine(LogDir, $"sharpclock-{day:yyyy-MM-dd}.log");
+            if (!File.Exists(archive))
+                File.Move(LogFile, archive);
+            else
+                File.Delete(LogFile);
+
+            var cutoff = DateTime.Today.AddDays(-14);
+            foreach (var f in Directory.GetFiles(LogDir, "sharpclock-*.log"))
+                if (File.GetLastWriteTime(f).Date < cutoff)
+                    File.Delete(f);
+        }
+
+        public static void Clear()
+        {
+            File.Delete(LogFile);
+        }
+
         public static void Log(params object[] args)
         {
             string logString = "";
@@ -32,11 +54,17 @@ namespace SharpClock
                 }
             }
             Console.ResetColor();
-            Console.Write("\n");
-            using (StreamWriter sw = File.AppendText("WebPage/System.log"))
+            Console.WriteLine();
+
+            var today = DateTime.Today;
+            if (today != currentDay)
             {
-                sw.WriteLine(logString);
+                Rotate(currentDay);
+                currentDay = today;
             }
+
+            using (var sw = File.AppendText(LogFile))
+                sw.WriteLine(logString);
         }
     }
 }

@@ -1,208 +1,148 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.Net;
-using System.Reflection;
-using System.Xml;
 using SharpClock;
 
 namespace PixelWeather
 {
     public class PixelWeather : PixelModule
     {
-        [VisibleNameEnum(lang = "pl", values = new string[]{"Temp=Temperatura", "Humidity=Wilgotność", "Wind=Wiatr", "Pressure=Ciśnienie" })]
-        [VisibleNameEnum(lang = "en", values = new string[]{"Temp=Temperature", "Humidity=Humidity", "Wind=Wind", "Pressure=Pressure" })]
-        public enum SubModule { Temp, Humidity, Wind, Pressure }
-        [VisibleNameEnum(lang = "pl", values = new string[] { "name=Nazwa", "id=Id", "cord=Współrzędne", "zip=Kod pocztowy" })]
-        [VisibleNameEnum(lang = "en", values = new string[] { "name=Name", "id=Id", "cord=Coordinates", "zip=Zip code" })]
+        public enum SubModule { Temp, Humidity, Wind, Pressure, AirQuality }
         public enum LocationType { name, id, cord, zip }
-        [VisibleName(lang = "pl", value = "Pokaż")]
-        [VisibleName(lang = "en", value = "Show")]
-        public SubModule ModuleToShow { get; set; } = SubModule.Temp;
-        [VisibleName(lang = "pl", value = "Lokalizacja")]
-        [VisibleName(lang = "en", value = "Location")]
-        public string Location { get; set; } = "Warsaw,pl";
-        [VisibleName(lang = "pl", value = "Lokalizuj przez")]
-        [VisibleName(lang = "en", value = "Location by")]
-        public LocationType LocationBy { get; set; } = LocationType.name;
-        //public string debugTemp { get => weather?.Temperature; set { if (weather != null) weather.Temperature = value; } }
+        public enum DisplayMode { Static, Rotating }
 
-        Weather weather;
-        string url;
-        string API = "";
-        Dictionary<string, Image> WeatherImages = new Dictionary<string, Image>();
-        Dictionary<string, GifImage> GifWeatherImages = new Dictionary<string, GifImage>();
-        Image GetWeatherImage(Weather.Type type)
-        {
-            var time = DateTime.Now;
-            switch (type)
-            {
-                case Weather.Type.no:
-                    return WeatherImages["null"];
-                case Weather.Type.Thunderstorm:
-                    return GifWeatherImages["Thunderstorm"].GetCurrentFrame;
-                case Weather.Type.Drizzle:
-                    return GifWeatherImages["Drizzle"].GetCurrentFrame;
-                case Weather.Type.Rain:
-                    return GifWeatherImages["Rain"].GetCurrentFrame;
-                case Weather.Type.Snow:
-                    return GifWeatherImages["Snow"].GetCurrentFrame;
-                case Weather.Type.Mist:
-                    return GifWeatherImages["Mist"].GetCurrentFrame;
-                case Weather.Type.Clear:
-                    if(time > weather.SunRise && time < weather.SunSet)
-                        return GifWeatherImages["Clear"].GetCurrentFrame;
-                    else
-                        return GifWeatherImages["ClearNight"].GetCurrentFrame;
-                case Weather.Type.Clouds:
-                    if (time > weather.SunRise && time < weather.SunSet)
-                        return GifWeatherImages["Clouds"].GetCurrentFrame;
-                    else
-                        return GifWeatherImages["CloudsNight"].GetCurrentFrame;
-                default:
-                    return WeatherImages["null"];
-            }
-        }
+        public DisplayMode Mode            { get; set; } = DisplayMode.Static;
+        public int         RotationInterval{ get; set; } = 5000;
+        public SubModule   ModuleToShow    { get; set; } = SubModule.Temp;
+        public string      Location        { get; set; } = "Warsaw,pl";
+        public LocationType LocationBy     { get; set; } = LocationType.name;
+        public string      ApiKey          { get; set; } = "";
+        public int         AqiStationId    { get; set; } = 0;
+
+        readonly Weather _weather = new Weather();
+        readonly AirData _airData = new AirData();
+
         public PixelWeather()
         {
-            Icon = "cloud";
-            var assembly = Assembly.GetExecutingAssembly();
-            WeatherImages.Add("null", Image.FromFile("img/null.png"));
-            WeatherImages.Add("Humidity", Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Humidity.png")));
-            
-            GifWeatherImages.Add("Thunderstorm", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Thunderstorm.gif"))));
-            GifWeatherImages.Add("Drizzle", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Drizzle.gif"))));
-            GifWeatherImages.Add("Rain", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Rain.gif"))));
-            GifWeatherImages.Add("Snow", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Snow.gif"))));
-            GifWeatherImages.Add("Mist", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Mist.gif"))));
-            GifWeatherImages.Add("Clear", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Clear.gif"))));
-            GifWeatherImages.Add("ClearNight", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Clear_night.gif"))));
-            GifWeatherImages.Add("Clouds", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.fewClouds.gif"))));
-            GifWeatherImages.Add("CloudsNight", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Clouds.gif"))));
-            GifWeatherImages.Add("Wind", new GifImage(Image.FromStream(assembly.GetManifestResourceStream($"PixelWeather.Weather.Wind.gif"))));
-
+            Icon     = "cloud";
             Tickrate = 1000 * 60 * 10;
+
+            Settings
+                .Add(nameof(Mode), () => Mode, v => Mode = v)
+                    .Label("pl", "Tryb").Label("en", "Mode")
+                    .EnumLabel("pl", "Static=Stały", "Rotating=Zmienny")
+                    .EnumLabel("en", "Static=Static", "Rotating=Rotating")
+                .Add(nameof(RotationInterval), () => RotationInterval, v => RotationInterval = v)
+                    .Label("pl", "Czas zmiany (ms)").Label("en", "Rotation interval (ms)")
+                    .Range(100, 30000).When(() => Mode == DisplayMode.Rotating)
+                .Add(nameof(ModuleToShow), () => ModuleToShow, v => ModuleToShow = v)
+                    .Label("pl", "Pokaż").Label("en", "Show")
+                    .EnumLabel("pl", "Temp=Temperatura", "Humidity=Wilgotność", "Wind=Wiatr", "Pressure=Ciśnienie", "AirQuality=Jakość powietrza")
+                    .EnumLabel("en", "Temp=Temperature", "Humidity=Humidity", "Wind=Wind", "Pressure=Pressure", "AirQuality=Air Quality")
+                    .When(() => Mode == DisplayMode.Static)
+                .Add(nameof(ApiKey), () => ApiKey, v => ApiKey = v)
+                    .Label("pl", "Klucz API OWM").Label("en", "OWM API Key").Password()
+                .Add(nameof(LocationBy), () => LocationBy, v => LocationBy = v)
+                    .Label("pl", "Lokalizuj przez").Label("en", "Location by")
+                    .EnumLabel("pl", "name=Nazwa", "id=Id", "cord=Współrzędne", "zip=Kod pocztowy")
+                    .EnumLabel("en", "name=Name", "id=Id", "cord=Coordinates", "zip=Zip code")
+                .Add(nameof(Location), () => Location, v => Location = v)
+                    .Label("pl", "Lokalizacja").Label("en", "Location")
+                .Add(nameof(AqiStationId), () => AqiStationId, v => AqiStationId = v)
+                    .Label("pl", "ID stacji GIOŚ").Label("en", "GIOŚ Station ID");
         }
+
+        string BuildUrl()
+        {
+            switch (LocationBy)
+            {
+                case LocationType.id:   return $"https://api.openweathermap.org/data/2.5/weather?id={Location}&units=metric&mode=xml&appid={ApiKey}";
+                case LocationType.cord:
+                    var c = Location.Split(',');
+                    return $"https://api.openweathermap.org/data/2.5/weather?lat={c[0]}&lon={c[1]}&units=metric&mode=xml&appid={ApiKey}";
+                case LocationType.zip:  return $"https://api.openweathermap.org/data/2.5/weather?zip={Location}&units=metric&mode=xml&appid={ApiKey}";
+                default:                return $"https://api.openweathermap.org/data/2.5/weather?q={Location}&units=metric&mode=xml&appid={ApiKey}";
+            }
+        }
+
         protected override void Update(Stopwatch stopwatch)
         {
-            switch (LocationBy )
+            _weather.Fetch(BuildUrl());
+            if (AqiStationId > 0)
             {
-                case LocationType.name:
-                    url = $"https://api.openweathermap.org/data/2.5/weather?q={Location}&units=metric&mode=xml&appid={API}";
-                    break;
-                case LocationType.id:
-                    url = $"https://api.openweathermap.org/data/2.5/weather?id={Location}&units=metric&mode=xml&appid={API}";
-                    break;
-                case LocationType.cord:
-                    var locArr = Location.Split(',');
-                    var lat = locArr[0];
-                    var lon = locArr[1];
-                    url = $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&mode=xml&appid={API}";
-                    break;
-                case LocationType.zip:
-                    url = $"https://api.openweathermap.org/data/2.5/weather?zip={Location}&units=metric&mode=xml&appid={API}";
-                    break;
-            }
-            using (WebClient wc = new WebClient())
-            {
-                XmlDocument xml = new XmlDocument();
-                try
-                {
-                    weather = new Weather();
-                    //Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Loading weather data");
-                    xml.LoadXml(wc.DownloadString(url));
-                    //Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Loading weather Completed!");
-                    weather.SetSun(xml.DocumentElement["city"]["sun"].GetAttribute("rise"), xml.DocumentElement["city"]["sun"].GetAttribute("set"), xml.DocumentElement["city"]["timezone"].InnerText);
-                    weather.Temperature = xml.DocumentElement["temperature"].GetAttribute("value");
-                    weather.Humidity = xml.DocumentElement["humidity"].GetAttribute("value");
-                    weather.Pressure = xml.DocumentElement["pressure"].GetAttribute("value");
-                    weather.SetWind(xml.DocumentElement["wind"]["speed"].GetAttribute("value"), xml.DocumentElement["wind"]["direction"].GetAttribute("code"));
-                    weather.SetWeather(xml.DocumentElement["weather"].GetAttribute("number"));
-                }
-                catch (Exception e)
-                {
-                    Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:",ConsoleColor.Red,"[Error] ", ConsoleColor.White, e.Message);
-                    weather.SetNull();
-                }
+                using (var wc = new WebClient())
+                    _airData.Fetch(AqiStationId, wc);
             }
         }
-        void DrawTemp()
-        {
-            Screen.SetImage(GetWeatherImage(weather.GetWeather()), 0);
-            var temp = weather.Temperature.Split('.');
-            int pos0 = 10;
-            if (temp[0].Length == 1)
-                pos0 = 12;
-            int pos = Screen.SetText(temp[0], Color.DarkRed, pos0, 0);
-            if (double.Parse(weather.Temperature) > -10)
-            {
-                int pos2 = DateTime.Now.Second % 2 == 0 ? Screen.SetText(".", Color.DarkBlue, pos, 0) : pos + 1;
-                Screen.SetText(temp[1], Color.DarkRed, pos2);
-            }
-            Screen.SetText("*C", Color.DarkBlue, 23);       
-        }
-        void DrawHumidity()
-        {
-            Screen.SetImage(WeatherImages["Humidity"], 0);
-            int pos = Screen.SetText(weather.Humidity, Color.DarkRed, 14);
-            Screen.SetText("%", Color.DarkBlue, pos);
-        }
-        void DrawWind()
-        {
-            Screen.SetImage(GifWeatherImages["Wind"].GetCurrentFrame, 0);
 
-            var windSpeed = weather.WindSpeed.Split('.');
-            int pos = Screen.SetText(windSpeed[0], Color.DarkRed, 8, 0);
-            int pos1 = DateTime.Now.Second % 2 == 0 ? Screen.SetText(".", Color.DarkBlue, pos, 0) : pos + 1;
-            Screen.SetText(windSpeed[1], Color.DarkRed, pos1);
-            //Screen.SetText("km/h", Color.DarkBlue, 20, 0);
-            Screen.SetText(weather.WindDir, Color.DarkBlue, 22);
-        }
-        void DrawPressure()
+        void DrawSubModule(SubModule sub)
         {
-            Screen.SetText(weather.Pressure, Color.DarkRed, 0);
-            Screen.SetText("hPa", Color.DarkBlue, 20, 0);
+            switch (sub)
+            {
+                case SubModule.Temp:       _weather.DrawTemp(Screen);      break;
+                case SubModule.Humidity:   _weather.DrawHumidity(Screen);  break;
+                case SubModule.Wind:       _weather.DrawWind(Screen);      break;
+                case SubModule.Pressure:   _weather.DrawPressure(Screen);  break;
+                case SubModule.AirQuality: _airData.Draw(Screen, AqiStationId); break;
+            }
         }
+
+        const int TransitionMs = 266;
+        long _prevMs = -1, _accMs = 0;
+
         public override void Draw(Stopwatch stopwatch = null)
         {
-            switch (ModuleToShow)
+            if (Mode == DisplayMode.Static || stopwatch == null)
             {
-                case SubModule.Temp:
-                    DrawTemp();
-                    break;
-                case SubModule.Humidity:
-                    DrawHumidity();
-                    break;
-                case SubModule.Wind:
-                    DrawWind();
-                    break;
-                case SubModule.Pressure:
-                    DrawPressure();
-                    break;
+                DrawSubModule(ModuleToShow);
+                return;
             }
+
+            long cur = stopwatch.ElapsedMilliseconds;
+            if (_prevMs >= 0 && cur >= _prevMs) _accMs += cur - _prevMs;
+            _prevMs = cur;
+
+            var values     = (SubModule[])Enum.GetValues(typeof(SubModule));
+            int curIdx     = (int)(_accMs / RotationInterval % values.Length);
+            long untilNext = RotationInterval - _accMs % RotationInterval;
+
+            if (untilNext > TransitionMs)
+            {
+                DrawSubModule(values[curIdx]);
+                return;
+            }
+
+            int nextIdx = (curIdx + 1) % values.Length;
+            int xOff    = Math.Min((int)((TransitionMs - untilNext) * 32 / TransitionMs) + 1, 32);
+
+            DrawSubModule(values[curIdx]);
+            var curBuf = Screen.GetBuffer();
+            Screen.Clear();
+            DrawSubModule(values[nextIdx]);
+            var nextBuf = Screen.GetBuffer();
+            Screen.DrawFromBuffersX(curBuf, nextBuf, xOff);
+        }
+
+        void NextSubModule()
+        {
+            var values = (SubModule[])Enum.GetValues(typeof(SubModule));
+            if (Mode == DisplayMode.Static)
+                ModuleToShow = values[((int)ModuleToShow + 1) % values.Length];
+            else
+                _accMs = (_accMs / RotationInterval + 1) * RotationInterval;
         }
 
         public override void OnButtonClick(ButtonId button)
         {
             base.OnButtonClick(button);
-            switch (ModuleToShow)
+            switch (button)
             {
-                case SubModule.Temp:
-                    ModuleToShow = SubModule.Humidity;
-                    break;
-                case SubModule.Humidity:
-                    ModuleToShow = SubModule.Wind;
-                    break;
-                case SubModule.Wind:
-                    ModuleToShow = SubModule.Pressure;
-                    break;
-                case SubModule.Pressure:
-                    ModuleToShow = SubModule.Temp;
+                case ButtonId.User1: NextSubModule(); break;
+                case ButtonId.User2:
+                    Mode = Mode == DisplayMode.Static ? DisplayMode.Rotating : DisplayMode.Static;
                     break;
             }
             pixelRenderer.UpdateConfig();
         }
-
     }
 }

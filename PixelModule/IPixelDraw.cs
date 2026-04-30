@@ -17,6 +17,20 @@ namespace SharpClock
         /// </summary>
         void Draw(int offset = 0);
         /// <summary>
+        /// Snapshot current screen state into a flat Color[256] buffer (logical order: 8*x + y)
+        /// </summary>
+        Color[] GetBuffer();
+        /// <summary>
+        /// Composite two buffers with vertical slide and show on screen.
+        /// Current slides down, next slides in from top. yOffset: 1..8.
+        /// </summary>
+        void DrawFromBuffers(Color[] current, Color[] next, int yOffset);
+        /// <summary>
+        /// Composite two buffers with horizontal slide (right-to-left) and show on screen.
+        /// Current exits left, next enters from right. xOffset: 1..32.
+        /// </summary>
+        void DrawFromBuffersX(Color[] current, Color[] next, int xOffset);
+        /// <summary>
         /// Return current screen as image
         /// </summary>
         /// <returns></returns>
@@ -65,5 +79,13 @@ namespace SharpClock
         /// <param name="x">Init position</param>
         /// <returns></returns>
         int TextLength(string text, int spaces = 1, int x = 0);
+        /// <summary>
+        /// Draw text right-aligned so it ends at rightEdge column.
+        /// </summary>
+        int SetTextRight(string text, Color c, int rightEdge, int spaces = 0);
+        /// <summary>
+        /// Draw text centred across the full 32-column screen.
+        /// </summary>
+        int SetTextCentered(string text, Color c, int spaces = 0);
     }
 }

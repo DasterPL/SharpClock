@@ -1,2 +1,20 @@
+# NuGet
+packages/
+
+# Visual Studio
 .vs/
+*.user
+*.suo
+
+# Build output
 **/bin/
+**/obj/
+
+# Web
+web/node_modules/
+web/dist/
+
+# Logs & OS
+*.log
+Thumbs.db
+.DS_Store

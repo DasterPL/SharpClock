@@ -10,14 +10,17 @@ namespace SharpClock
     {
         public static Stopwatch UpTime;
         static HttpServer WebServer;
-        static void Main(string[] args)
+        static void Main()
         {
-            UpTime = Stopwatch.StartNew();
-            
-            Logger.Clear();
-            Logger.Log("Sharp Clock v0.7.7");
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                Logger.Log(ConsoleColor.Red, $"[FATAL] {e.ExceptionObject}");
+                try { Kill(); } catch { }
+            };
 
-            ParseCommands(args);
+            UpTime = Stopwatch.StartNew();
+            Logger.Log("Sharp Clock v1.0.0");
+
             HandleUnixSignals();
 
             var GPIOevents = new GPIO();
@@ -36,20 +39,13 @@ namespace SharpClock
             
             PostHandler postHandler = new PostHandler(WebServer);
         }
-        static void ParseCommands(string[] args)
-        {
-            if (args.Length > 0 && args[0] == "stop")
-            {
-                Process.Start("/bin/bash", "-c \"killall -s SIGUSR1 mono\"");
-            }
-        }
         public static void Kill()
         {
             Logger.Log();
             WebServer.Stop();
             LoadingAnimation.Stop();
             PixelRenderer.Pixel.Stop();
-            Logger.Log("Shutingdown");
+            Logger.Log("Shutting down");
         }
         static void HandleUnixSignals()
         {
@@ -57,6 +53,7 @@ namespace SharpClock
             UnixSignal[] signals = new UnixSignal[]
             {
                 new UnixSignal(Signum.SIGINT),
+                new UnixSignal(Signum.SIGTERM),
                 new UnixSignal(Signum.SIGUSR1),
             };
             new Thread(delegate ()
@@ -67,7 +64,7 @@ namespace SharpClock
 
                     Signum signal = signals[index].Signum;
 
-                    if (signal == Signum.SIGINT || signal == Signum.SIGUSR1)
+                    if (signal == Signum.SIGINT || signal == Signum.SIGTERM || signal == Signum.SIGUSR1)
                     {
                         Kill();
                         Environment.Exit(0);

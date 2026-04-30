@@ -8,9 +8,11 @@ namespace SharpClock
         bool IsReady { get; }
         bool IsRunning { get; }
         bool Pause { get; set; }
+        bool AnimatedSwitching { get; set; }
 
         PixelModule GetModule(string name);
         void LoadModule(string absolutePath);
+        void UnloadModule(string dllFileName);
         void NextModule();
         void Reload();
         void Start();

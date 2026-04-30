@@ -4,18 +4,18 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{1A8DFA98-CF57-4D00-8DFB-DC0DC46050C4}</ProjectGuid>
+    <ProjectGuid>{DC3C1D68-A485-4F3C-AC0D-4A6DBEAE8C42}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PixelModule</RootNamespace>
-    <AssemblyName>PixelModule</AssemblyName>
+    <RootNamespace>PixelWebhook</RootNamespace>
+    <AssemblyName>PixelWebhook</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
@@ -42,20 +42,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GifImage.cs" />
-    <Compile Include="SettingsEntry.cs" />
-    <Compile Include="SettingsBuilder.cs" />
-    <Compile Include="IGPIO.cs" />
-    <Compile Include="IPixelDraw.cs" />
-    <Compile Include="IPixelRenderer.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="NullModule.cs" />
-    <Compile Include="PasswordField.cs" />
-    <Compile Include="PixelModule.cs" />
-    <Compile Include="RangeAttribute.cs" />
+    <Compile Include="HttpServ.cs" />
+    <Compile Include="PixelWebhook.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="VisibleName.cs" />
-    <Compile Include="VisibleNameEnum.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PixelModule\PixelModule.csproj">
+      <Project>{1A8DFA98-CF57-4D00-8DFB-DC0DC46050C4}</Project>
+      <Name>PixelModule</Name>
+      <Private>False</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
