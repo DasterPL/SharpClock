@@ -23,9 +23,8 @@ namespace SharpClock
             var s = (await bluetooth.ListControllers()).ToArray();
             foreach (string item in s)
             {
-                Console.WriteLine(item);
+                Logger.Log(ConsoleColor.White, item);
             }
-            //bluetooth.
         }
     }
 }

@@ -1,214 +1,284 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
+using Mono.Data.Sqlite;
 
 namespace SharpClock
 {
     class Config
     {
-        string file = "config.xml";
-        XmlDocument xml;
-        public Config()
+        static readonly string DbPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.db");
+        static string ConnStr => $"Data Source={DbPath};Version=3;";
+
+        static Config _instance;
+        static readonly object _lock = new object();
+        public static Config Instance
         {
-            xml = new XmlDocument();
-            try
+            get
             {
-                xml.Load(file);
-            }
-            catch (Exception)
-            {
-                xml.LoadXml("<?xml version=\"1.0\" encoding=\"UTF-8\"?><config><properties><screen brightness = \"10\" /><animatedSwitching enabled=\"false\" /><nightmode enable = \"False\" /></properties><modules></modules</config>");
-                xml.Save(file);
+                if (_instance == null)
+                    lock (_lock)
+                        if (_instance == null)
+                            _instance = new Config();
+                return _instance;
             }
         }
+
+        Config()
+        {
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS properties (
+                        key   TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS modules (
+                        name       TEXT PRIMARY KEY,
+                        start      INTEGER NOT NULL DEFAULT 1,
+                        sort_order INTEGER NOT NULL DEFAULT 0
+                    );
+                    CREATE TABLE IF NOT EXISTS module_params (
+                        module_name TEXT NOT NULL,
+                        key         TEXT NOT NULL,
+                        value       TEXT NOT NULL,
+                        PRIMARY KEY (module_name, key),
+                        FOREIGN KEY (module_name) REFERENCES modules(name) ON DELETE CASCADE
+                    );
+                    INSERT OR IGNORE INTO properties VALUES ('brightness', '10');
+                    INSERT OR IGNORE INTO properties VALUES ('animated_switching', 'False');
+                ";
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+        static SqliteConnection Open()
+        {
+            var conn = new SqliteConnection(ConnStr);
+            conn.Open();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "PRAGMA foreign_keys = ON";
+                cmd.ExecuteNonQuery();
+            }
+            return conn;
+        }
+
         public class Module
         {
             public string Class { get; private set; }
             public bool Start { get; private set; }
             public Dictionary<string, string> Params { get; private set; }
 
-            public Module(XmlElement module)
+            public Module(string cls, bool start, Dictionary<string, string> parms)
             {
-                Class = module.GetAttribute("class");
-                Start = bool.Parse(module.GetAttribute("start"));
+                Class = cls;
+                Start = start;
+                Params = parms;
+            }
 
-                var Params = new Dictionary<string, string>();
-                foreach (XmlAttribute param in module["params"].Attributes)
-                {
-                    Params.Add(param.Name, param.Value);
-                }
-                this.Params = Params;
-            }
-            public override string ToString()
-            {
-                return Class;
-            }
+            public override string ToString() => Class;
         }
+
+        Dictionary<string, string> GetParams(SqliteConnection conn, string moduleName)
+        {
+            var dict = new Dictionary<string, string>();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT key, value FROM module_params WHERE module_name = @name";
+                cmd.Parameters.AddWithValue("@name", moduleName);
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                        dict[reader.GetString(0)] = reader.GetString(1);
+            }
+            return dict;
+        }
+
         public Module[] Modules
         {
             get
             {
-                var modules = new List<Module>();
-                foreach (XmlElement module in xml.DocumentElement["modules"])
+                var list = new List<Module>();
+                using (var conn = Open())
+                using (var cmd = conn.CreateCommand())
                 {
-                    modules.Add(new Module(module));
+                    cmd.CommandText = "SELECT name, start FROM modules ORDER BY sort_order";
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            list.Add(new Module(reader.GetString(0), reader.GetInt32(1) != 0, GetParams(conn, reader.GetString(0))));
                 }
-                return modules.ToArray();
+                return list.ToArray();
             }
         }
+
         public Module GetModule(string name)
         {
-            foreach (XmlElement module in xml.DocumentElement["modules"])
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
             {
-                if (module.GetAttribute("class") == name)
-                    return new Module(module);
+                cmd.CommandText = "SELECT name, start FROM modules WHERE name = @name";
+                cmd.Parameters.AddWithValue("@name", name);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    if (!reader.Read()) return null;
+                    bool start = reader.GetInt32(1) != 0;
+                    return new Module(name, start, GetParams(conn, name));
+                }
             }
-            return null;
         }
+
         public string[] ModuleOrder
         {
             get
             {
-                List<string> tmp = new List<string>();
-                foreach (XmlElement module in xml.DocumentElement["modules"])
+                var names = new List<string>();
+                using (var conn = Open())
+                using (var cmd = conn.CreateCommand())
                 {
-                    tmp.Add(module.GetAttribute("class"));
+                    cmd.CommandText = "SELECT name FROM modules ORDER BY sort_order";
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            names.Add(reader.GetString(0));
                 }
-                return tmp.ToArray();
+                return names.ToArray();
             }
         }
+
         public void EditModules(PixelModule[] modules)
         {
-            //xml.DocumentElement["modules"].InnerText = "";            
-            foreach (var module in modules)
+            using (var conn = Open())
+            using (var tx = conn.BeginTransaction())
             {
-                XmlElement m = null;
-                foreach (XmlElement moduleElement in xml.DocumentElement["modules"])
+                foreach (var module in modules)
                 {
-                    if (moduleElement.GetAttribute("class") == module.Name)
-                        m = moduleElement;
-                }
-                if (m == null)
-                {
-                    Logger.Log("Coś nie pykło");
-                    break;
-                }
-                m.SetAttribute("start", module.IsRunning.ToString());
-
-                XmlElement p = m["params"];
-
-                foreach (var prop in module.GetType().GetProperties())
-                {
-                    if (prop.Name == "Name" || prop.Name == "IsRunning" || prop.Name == "Icon")
+                    using (var cmd = conn.CreateCommand())
                     {
-                        continue;
+                        cmd.CommandText = "UPDATE modules SET start = @start WHERE name = @name";
+                        cmd.Parameters.AddWithValue("@start", module.IsRunning ? 1 : 0);
+                        cmd.Parameters.AddWithValue("@name", module.Name);
+                        if (cmd.ExecuteNonQuery() == 0)
+                        {
+                            Logger.Log(ConsoleColor.Red, $"Module {module.Name} not found in config");
+                            continue;
+                        }
                     }
-                    //else if (prop.PropertyType.BaseType == typeof(Enum))
-                    //{
-                    //    p.SetAttribute(prop.PropertyType.Name, prop.GetValue(module).ToString());
-                    //}
-                    else if (prop.PropertyType == typeof(Color))
-                    {
-                        var c = (Color)prop.GetValue(module);
-                        p.SetAttribute(prop.Name, $"#{c.R.ToString("X2")}{c.G.ToString("X2")}{c.B.ToString("X2")}");
-                    }
-                    else
-                    {
-                        p.SetAttribute(prop.Name, prop.GetValue(module).ToString());
-                    }
+                    UpsertParams(conn, module);
                 }
-                m.AppendChild(p);
-                xml.DocumentElement["modules"].AppendChild(m);
+                tx.Commit();
             }
-            xml.Save(file);
         }
+
         public void CreateModule(PixelModule module)
         {
-            XmlElement m = xml.CreateElement(string.Empty, "module", string.Empty);
-
             Logger.Log(ConsoleColor.Yellow, $"Module Name: {module.Name} Start: True");
-            m.SetAttribute("class", module.Name);
-            m.SetAttribute("start", "True");
+            using (var conn = Open())
+            using (var tx = conn.BeginTransaction())
+            {
+                int sortOrder;
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT COALESCE(MAX(sort_order) + 1, 0) FROM modules";
+                    sortOrder = Convert.ToInt32(cmd.ExecuteScalar());
+                }
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "INSERT OR IGNORE INTO modules (name, start, sort_order) VALUES (@name, 1, @order)";
+                    cmd.Parameters.AddWithValue("@name", module.Name);
+                    cmd.Parameters.AddWithValue("@order", sortOrder);
+                    cmd.ExecuteNonQuery();
+                }
+                UpsertParams(conn, module);
+                tx.Commit();
+            }
+        }
 
-            XmlElement p = xml.CreateElement(string.Empty, "params", string.Empty);
-            foreach (var prop in module.GetType().GetProperties())
+        void UpsertParams(SqliteConnection conn, PixelModule module)
+        {
+            foreach (var entry in module.Settings.All)
             {
                 try
                 {
-                    Logger.Log(ConsoleColor.Yellow, $"Prop: {prop.Name} Value: {prop.GetValue(module).ToString()}");
-                    if (prop.Name == "Name" || prop.Name == "IsRunning" || prop.Name == "Icon")
+                    string value = SettingsBuilder.Serialize(entry.ValueType, entry.Get());
+                    using (var cmd = conn.CreateCommand())
                     {
-                        continue;
-                    }
-                    else if (prop.PropertyType == typeof(Color))
-                    {
-                        var c = (Color)prop.GetValue(module);
-                        p.SetAttribute(prop.Name, $"#{c.R.ToString("X2")}{c.G.ToString("X2")}{c.B.ToString("X2")}");
-                    }
-                    else
-                    {
-                        p.SetAttribute(prop.Name, prop.GetValue(module).ToString());
+                        cmd.CommandText = "INSERT OR REPLACE INTO module_params (module_name, key, value) VALUES (@mod, @key, @val)";
+                        cmd.Parameters.AddWithValue("@mod", module.Name);
+                        cmd.Parameters.AddWithValue("@key", entry.Key);
+                        cmd.Parameters.AddWithValue("@val", value);
+                        cmd.ExecuteNonQuery();
                     }
                 }
                 catch (Exception)
                 {
-                    Logger.Log(ConsoleColor.Yellow, $"Prop: {prop.Name} Value: ", ConsoleColor.Red, "NULL");
+                    Logger.Log(ConsoleColor.Yellow, $"Prop: {entry.Key} Value: ", ConsoleColor.Red, "NULL");
                 }
-
-
             }
-
-            m.AppendChild(p);
-            xml.DocumentElement["modules"].AppendChild(m);
-            xml.Save(file);
         }
+
         public void RemoveModule(string name)
         {
-            XmlElement tmp = null;
-            foreach (XmlElement module in xml.DocumentElement["modules"])
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
             {
-                if (module.GetAttribute("class") == name)
-                    tmp = module;
+                cmd.CommandText = "DELETE FROM modules WHERE name = @name";
+                cmd.Parameters.AddWithValue("@name", name);
+                cmd.ExecuteNonQuery();
             }
-            xml.DocumentElement["modules"].RemoveChild(tmp);
-            xml.Save(file);
         }
+
         public void SortModules(string[] names)
         {
-            List<XmlElement> tmp = new List<XmlElement>();
-            foreach (XmlElement module in xml.DocumentElement["modules"])
+            using (var conn = Open())
+            using (var tx = conn.BeginTransaction())
             {
-                tmp.Add(module);
+                for (int i = 0; i < names.Length; i++)
+                {
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "UPDATE modules SET sort_order = @order WHERE name = @name";
+                        cmd.Parameters.AddWithValue("@order", i);
+                        cmd.Parameters.AddWithValue("@name", names[i]);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                tx.Commit();
             }
-            xml.DocumentElement["modules"].InnerText = "";
-            foreach (string name in names)
-            {
-                xml.DocumentElement["modules"].AppendChild(tmp.Find((x) => x.GetAttribute("class") == name));
-            }
-            xml.Save(file);
         }
+
+        string GetProperty(string key)
+        {
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT value FROM properties WHERE key = @key";
+                cmd.Parameters.AddWithValue("@key", key);
+                return cmd.ExecuteScalar()?.ToString();
+            }
+        }
+
+        void SetProperty(string key, string value)
+        {
+            using (var conn = Open())
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "INSERT OR REPLACE INTO properties (key, value) VALUES (@key, @value)";
+                cmd.Parameters.AddWithValue("@key", key);
+                cmd.Parameters.AddWithValue("@value", value);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
         public byte Brightness
         {
-            get => byte.Parse(xml.DocumentElement["properties"]["screen"].GetAttribute("brightness"));
-            set
-            {
-                xml.DocumentElement["properties"]["screen"].SetAttribute("brightness", value.ToString());
-                xml.Save(file);
-            }
+            get => byte.Parse(GetProperty("brightness") ?? "10");
+            set => SetProperty("brightness", value.ToString());
         }
+
         public bool AnimatedSwitching
         {
-            get => bool.Parse(xml.DocumentElement["properties"]["animatedSwitching"].GetAttribute("enabled"));
-            set
-            {
-                xml.DocumentElement["properties"]["animatedSwitching"].SetAttribute("enabled", value.ToString());
-                xml.Save(file);
-            }
+            get => bool.Parse(GetProperty("animated_switching") ?? "False");
+            set => SetProperty("animated_switching", value.ToString());
         }
     }
 }

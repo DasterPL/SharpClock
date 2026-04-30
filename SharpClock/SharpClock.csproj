@@ -72,11 +72,14 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Data.Sqlite">
+      <HintPath>..\packages\Mono.Data.Sqlite.1.0.61\lib\net40\Mono.Data.Sqlite.dll</HintPath>
+    </Reference>
     <Reference Include="Mono.Posix">
       <HintPath>.\Mono.Posix.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -119,19 +122,18 @@
   <ItemGroup>
     <Compile Include="Config.cs" />
     <Compile Include="WebPage\POST_File.cs" />
-    <None Include="bundleconfig.json" />
-    <None Include="ClassDiagram1.cd" />
     <None Include="img\font_size">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="GPIO\Bluetooth.cs" />
     <Compile Include="GPIO\GPIO.cs" />
     <Compile Include="Pixel\SettingModule.cs" />
-    <Compile Include="PostHandler.cs" />
-    <Compile Include="LoadingAnimation.cs" />
+    <Compile Include="WebPage\PostHandler.cs" />
+    <Compile Include="Pixel\LoadingAnimation.cs" />
     <None Include="packages.config" />
     <Compile Include="WebPage\HttpServer.cs" />
     <Compile Include="Pixel\PixelDraw.cs" />
+    <Compile Include="Pixel\PixelFont.cs" />
     <Compile Include="Pixel\PixelRenderer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -140,10 +142,11 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config.xml">
+<Content Include="favicon.ico" />
+    <Content Include="..\packages\sqlite3-win-x64\sqlite3.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>sqlite3.dll</Link>
     </Content>
-    <Content Include="favicon.ico" />
     <Content Include="img\font.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -151,28 +154,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="img\RomanNumbers.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\favicon.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\index.html">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\jquery.ui.touch-punch.min.js">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\logo.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\main.js" />
-    <Content Include="WebPage\main.min.js">
-      <DependentUpon>main.js</DependentUpon>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="WebPage\style.css" />
-    <Content Include="WebPage\style.min.css">
-      <DependentUpon>style.css</DependentUpon>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -198,4 +179,16 @@
     <Folder Include="Modules\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
+  <Target Name="BuildReact" BeforeTargets="Build">
+    <Message Text="Building React frontend..." Importance="High" />
+    <Exec Command="npm run build" WorkingDirectory="$(MSBuildProjectDirectory)\..\web" />
+    <ItemGroup>
+      <ReactDist Include="$(MSBuildProjectDirectory)\..\web\dist\**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ReactDist)"
+          DestinationFiles="@(ReactDist->'$(OutputPath)WebPage\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>

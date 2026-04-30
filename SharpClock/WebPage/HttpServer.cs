@@ -1,14 +1,10 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -19,207 +15,200 @@ namespace SharpClock
         bool runServer = true;
         public bool IsReady { get; private set; } = false;
 
-        public delegate void PostRequest(string path, System.Collections.Specialized.NameValueCollection query);
-        public event PostRequest OnPost;
-        public dynamic PostResponse { get; set; } = string.Empty;
-        void Post(string path, System.Collections.Specialized.NameValueCollection query)
-        {
-            OnPost?.Invoke(path, query);
-        }
+        public delegate JToken ApiRequest(string method, string path, System.Collections.Specialized.NameValueCollection query);
+        public event ApiRequest OnRequest;
 
         public delegate void DelegateError(string error);
         public event DelegateError OnError;
-        void Error(string errorMessage)
-        {
-            OnError?.Invoke(errorMessage);
-        }
+
         public HttpServer(string pageDirectory)
         {
             this.pageDirectory = pageDirectory;
         }
+
         HttpListener listener = new HttpListener();
         string pageDirectory;
+
+        static readonly System.Collections.Generic.HashSet<string> SilentPaths =
+            new System.Collections.Generic.HashSet<string> { "/screen", "/log" };
+
         public async Task HandleIncomingConnections()
         {
             while (runServer)
             {
-                // Will wait here until we hear from a connection
-                HttpListenerContext ctx = await listener.GetContextAsync();
-
-                // Peel out the requests and response objects
-                HttpListenerRequest req = ctx.Request;
-                HttpListenerResponse resp = ctx.Response;
-
-                if ((req.HttpMethod == "POST"))
+                try
                 {
-                    if (req.ContentType?.Substring(0, 20) == "multipart/form-data;")
-                    {
-                        Stream tmp = new MemoryStream();
-                        req.InputStream.CopyTo(tmp);
-
-                        var query = new System.Collections.Specialized.NameValueCollection();
-                        tmp.Position = 0;
-                        var reader = new StreamReader(tmp, req.ContentEncoding);
-                        reader.ReadLine();
-                        query.Add("fileName", Regex.Match(reader.ReadLine(), "filename=\"(.+?)\"").Groups[1].Value);
-                        query.Add("ContentType", reader.ReadLine().Split(':')[1].Substring(1));         
-                        tmp.Position = 0;
-
-                        Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, $"{req.HttpMethod} request on: {req.Url.AbsolutePath}: ", ConsoleColor.Green, "File", ConsoleColor.White, $"={query["fileName"]}");
-                        Post(req.Url.AbsolutePath, query);
-
-                        if (PostResponse != string.Empty)
-                            POST_File.SaveFile(PostResponse, tmp, req.ContentEncoding, req.ContentType);
-                        
-
-                        reader.Dispose();
-                    }
-                    else
-                    {
-                        var reader = new StreamReader(req.InputStream, req.ContentEncoding);
-                        var  query = HttpUtility.ParseQueryString(reader.ReadToEnd());
-                        string postParams = "";
-                        foreach (string Key in query.Keys)
-                        {
-                            postParams += $"{Key} = {query[Key]}; ";
-                        }
-                        Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, $"{req.HttpMethod} request on: {req.Url.AbsolutePath}: {postParams}");
-                        Post(req.Url.AbsolutePath, query);
-                    }
-                    dynamic json = new JObject();
-                    //json.Error = null;
-                    json.HostTime = DateTime.Now.ToString();
-                    json.Response = PostResponse != null ? PostResponse : null;
-                    Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server] Response: ", ConsoleColor.White, json.ToString());
-                    byte[] data = Encoding.UTF8.GetBytes(json.ToString(Formatting.None));
-                    PostResponse = string.Empty;
-                    resp.ContentType = "application/json";
-                    resp.ContentEncoding = Encoding.UTF8;
-                    resp.ContentLength64 = data.LongLength;
-
-                    // Write out to the response stream (asynchronously), then close it
-                    await resp.OutputStream.WriteAsync(data, 0, data.Length);
-                    resp.Close();
+                    HttpListenerContext ctx = await listener.GetContextAsync();
+                    _ = HandleRequest(ctx);
                 }
-
-                if ((req.HttpMethod == "GET"))
+                catch when (!runServer)
                 {
-                    Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, $"{req.HttpMethod} request on: {req.Url.AbsolutePath}");
-                    string path = req.Url.AbsolutePath == "/" ? "/index.html" : req.Url.AbsolutePath;
+                    break;
+                }
+            }
+        }
+
+        private async Task HandleRequest(HttpListenerContext ctx)
+        {
+            HttpListenerRequest req = ctx.Request;
+            HttpListenerResponse resp = ctx.Response;
+
+            try
+            {
+                string method = req.HttpMethod;
+                string absPath = req.Url.AbsolutePath;
+
+                if (method == "GET" && (absPath == "/" || System.IO.Path.HasExtension(absPath)))
+                {
+                    Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, $"GET {absPath}");
+                    string filePath = absPath == "/" ? "/index.html" : absPath;
                     try
                     {
-                        switch (Path.GetExtension(path))
-                        {
-                            case ".js":
-                                resp.ContentType = "application/javascript";
-                                break;
-                            case ".json":
-                                resp.ContentType = "application/json";
-                                break;
-                            case ".ogg":
-                                resp.ContentType = "application/ogg";
-                                break;
-                            case ".mp3":
-                                resp.ContentType = "audio/mpeg";
-                                break;
-                            case ".gif":
-                                resp.ContentType = "image/gif";
-                                break;
-                            case ".jpeg":
-                            case ".jpg":
-                                resp.ContentType = "image/jpeg";
-                                break;
-                            case ".png":
-                                resp.ContentType = "image/png";
-                                break;
-                            case ".tif":
-                            case ".tiff":
-                                resp.ContentType = "image/tiff";
-                                break;
-                            case ".ico":
-                                resp.ContentType = "image/vnd.microsoft.icon";
-                                break;
-                            case ".css":
-                                resp.ContentType = "text/css";
-                                break;
-                            case ".html":
-                            case ".htm":
-                                resp.ContentType = "text/html";
-                                break;
-                            case ".txt":
-                            case ".log":
-                                resp.ContentType = "text/plain";
-                                break;
-                            case ".xml":
-                                resp.ContentType = "text/xml";
-                                break;
-                            case ".mp4":
-                                resp.ContentType = "video/mp4";
-                                break;
-                            default:
-                                resp.ContentType = "application/octet-stream";
-                                break;
-                        }
-                        byte[] file = File.ReadAllBytes(pageDirectory + path);
+                        resp.ContentType = GetMimeType(filePath);
+                        byte[] file = File.ReadAllBytes(pageDirectory + filePath);
                         resp.ContentEncoding = Encoding.UTF8;
                         resp.ContentLength64 = file.LongLength;
-
                         await resp.OutputStream.WriteAsync(file, 0, file.Length);
                         resp.Close();
                     }
                     catch (Exception e)
                     {
                         Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.Red, "[Error]", ConsoleColor.White, e.Message);
-                        if(e is FileNotFoundException || e is DirectoryNotFoundException)
+                        if (e is FileNotFoundException || e is DirectoryNotFoundException)
                         {
-                            resp.ContentType = "text/html";
                             byte[] data = Encoding.UTF8.GetBytes("<h1>HTTP Error 404 - File Not Found</h1>");
+                            resp.ContentType = "text/html";
                             resp.ContentEncoding = Encoding.UTF8;
                             resp.ContentLength64 = data.LongLength;
-
                             await resp.OutputStream.WriteAsync(data, 0, data.Length);
                             resp.Close();
                         }
                     }
-
+                    return;
                 }
+
+                // API request
+                bool silent = SilentPaths.Contains(absPath);
+                JToken apiResult = null;
+                System.Collections.Specialized.NameValueCollection query;
+
+                if (req.ContentType?.StartsWith("multipart/form-data;") == true)
+                {
+                    Stream tmp = new MemoryStream();
+                    req.InputStream.CopyTo(tmp);
+
+                    query = new System.Collections.Specialized.NameValueCollection();
+                    tmp.Position = 0;
+                    var reader = new StreamReader(tmp, req.ContentEncoding);
+                    reader.ReadLine();
+                    query.Add("fileName", Regex.Match(reader.ReadLine(), "filename=\"(.+?)\"").Groups[1].Value);
+                    query.Add("ContentType", reader.ReadLine().Split(':')[1].Substring(1));
+                    tmp.Position = 0;
+
+                    Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White,
+                        $"{method} {absPath}: File={query["fileName"]}");
+
+                    apiResult = OnRequest?.Invoke(method, absPath, query);
+
+                    if (apiResult?["result"] != null)
+                        POST_File.SaveFile(apiResult["result"].ToString(), tmp, req.ContentEncoding, req.ContentType);
+
+                    reader.Dispose();
+                }
+                else if (method == "GET" || method == "DELETE")
+                {
+                    query = HttpUtility.ParseQueryString(req.Url.Query);
+                    if (!silent)
+                        Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White,
+                            $"{method} {absPath}{req.Url.Query}");
+                    apiResult = OnRequest?.Invoke(method, absPath, query);
+                }
+                else
+                {
+                    var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+                    query = HttpUtility.ParseQueryString(reader.ReadToEnd());
+                    if (!silent)
+                    {
+                        string ps = "";
+                        foreach (string key in query.Keys)
+                            ps += $"{key}={query[key]}; ";
+                        Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White,
+                            $"{method} {absPath}: {ps}");
+                    }
+                    apiResult = OnRequest?.Invoke(method, absPath, query);
+                }
+
+                dynamic json = new JObject();
+                json.HostTime = DateTime.Now.ToString();
+                json.Response = apiResult;
+                byte[] responseData = Encoding.UTF8.GetBytes(json.ToString(Formatting.None));
+                resp.ContentType = "application/json";
+                resp.ContentEncoding = Encoding.UTF8;
+                resp.ContentLength64 = responseData.LongLength;
+                await resp.OutputStream.WriteAsync(responseData, 0, responseData.Length);
+                resp.Close();
+            }
+            catch (Exception e)
+            {
+                Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.Red, "[Error] ", ConsoleColor.White, $"[{e.GetType()}] {e.Message}");
+                OnError?.Invoke(e.Message);
             }
         }
-        Task listenTask;
+
+        private static string GetMimeType(string path)
+        {
+            switch (System.IO.Path.GetExtension(path))
+            {
+                case ".js":   return "application/javascript";
+                case ".json": return "application/json";
+                case ".ogg":  return "application/ogg";
+                case ".mp3":  return "audio/mpeg";
+                case ".gif":  return "image/gif";
+                case ".jpeg":
+                case ".jpg":  return "image/jpeg";
+                case ".png":  return "image/png";
+                case ".tif":
+                case ".tiff": return "image/tiff";
+                case ".ico":  return "image/vnd.microsoft.icon";
+                case ".css":  return "text/css";
+                case ".html":
+                case ".htm":  return "text/html";
+                case ".txt":
+                case ".log":  return "text/plain";
+                case ".xml":  return "text/xml";
+                case ".mp4":  return "video/mp4";
+                default:      return "application/octet-stream";
+            }
+        }
 
         public void Start(int Port = 80)
         {
             listener.Prefixes.Add($"http://*:{Port}/");
-            new Task(() =>{
+            new Task(() =>
+            {
                 try
                 {
                     listener.Start();
                     IsReady = true;
                     Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, $" Listening for connections on port: {Port}");
-
-                    // Handle requests
-                    listenTask = HandleIncomingConnections();
-                    //listenTask.Start();
-                    listenTask.GetAwaiter().GetResult();
-
-                    // Close the listener
+                    HandleIncomingConnections().GetAwaiter().GetResult();
                     listener.Close();
                 }
                 catch (Exception e)
                 {
                     Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.Red, "[Error] ", ConsoleColor.White, $"[{e.GetType()}] {e.Message}");
-                    Error(e.Message);
+                    OnError?.Invoke(e.Message);
                 }
             }).Start();
         }
+
         public void Stop()
         {
-            Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, " Shuttingdown");
+            Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.White, " Shutting down");
             runServer = false;
-            while (IsRunning) ;
-            //if(listener.IsListening)
-            //  listener.Close();
+            listener.Close();
         }
+
         public bool IsRunning { get => runServer; }
     }
 }

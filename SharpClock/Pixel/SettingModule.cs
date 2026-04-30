@@ -60,10 +60,6 @@ namespace SharpClock
         protected override void Update(Stopwatch stopwatch)
         {
             int len = Screen.TextLength(CurrentMenu[currentFunction].Name);
-            //if(CurrentMenu[currentFunction].Image != null)
-            //{
-            //    //TO DO
-            //}
             if (len <= 30)
             {
                 pos = 1;
@@ -106,7 +102,6 @@ namespace SharpClock
         private class Function
         {
             public string Name { get; set; }
-            public Image Image { get; set; } = null;
             public Action Action { get; set; }
         }
     }
