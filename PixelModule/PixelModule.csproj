@@ -44,7 +44,6 @@
   <ItemGroup>
     <Compile Include="GifImage.cs" />
     <Compile Include="IStorage.cs" />
-    <Compile Include="StorageExtensions.cs" />
     <Compile Include="SettingsEntry.cs" />
     <Compile Include="SettingsBuilder.cs" />
     <Compile Include="IGPIO.cs" />

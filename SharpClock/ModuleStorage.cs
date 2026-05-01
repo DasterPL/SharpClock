@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace SharpClock
 {
-    class ModuleStorage : IStorage
+    class ModuleStorage : Storage
     {
         readonly string _moduleName;
 
         public ModuleStorage(string moduleName) => _moduleName = moduleName;
 
-        public string Get(string key, string defaultValue = null)
+        public override string Get(string key, string defaultValue = null)
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -21,7 +21,7 @@ namespace SharpClock
             }
         }
 
-        public void Set(string key, string value)
+        public override void Set(string key, string value)
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -34,7 +34,7 @@ namespace SharpClock
             }
         }
 
-        public void Delete(string key)
+        public override void Delete(string key)
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -46,7 +46,7 @@ namespace SharpClock
             }
         }
 
-        public IReadOnlyDictionary<string, string> GetAll()
+        public override IReadOnlyDictionary<string, string> GetAll()
         {
             var dict = new Dictionary<string, string>();
             using (var conn = Config.Open())
