@@ -13,7 +13,7 @@ namespace SharpClock
         static void Main()
         {
             Logger.SetImpl(new FileLogger());
-            PixelModule.SetStorageFactory(name => new ModuleStorage(name));
+            PixelModule.SetStorageFactory(name => new Storage(name));
 
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {

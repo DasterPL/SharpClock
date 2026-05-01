@@ -17,7 +17,7 @@ namespace SharpClock
             return entry;
         }
 
-        internal static T Convert<T>(object value)
+        public static T Convert<T>(object value)
         {
             if (value is T t) return t;
             var type = typeof(T);

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace SharpClock
 {
-    class ModuleStorage : Storage
+    class Storage : IStorage
     {
         readonly string _moduleName;
 
-        public ModuleStorage(string moduleName) => _moduleName = moduleName;
+        public Storage(string moduleName) => _moduleName = moduleName;
 
-        public override string Get(string key, string defaultValue = null)
+        public T Get<T>(string key, T defaultValue = default(T))
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -17,11 +17,14 @@ namespace SharpClock
                 cmd.CommandText = "SELECT value FROM module_storage WHERE module_name = @mod AND key = @key";
                 cmd.Parameters.AddWithValue("@mod", _moduleName);
                 cmd.Parameters.AddWithValue("@key", key);
-                return cmd.ExecuteScalar()?.ToString() ?? defaultValue;
+                var result = cmd.ExecuteScalar()?.ToString();
+                if (result == null) return defaultValue;
+                try { return SettingsBuilder.Convert<T>(result); }
+                catch { return defaultValue; }
             }
         }
 
-        public override void Set(string key, string value)
+        public bool Set<T>(string key, T value)
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -31,10 +34,11 @@ namespace SharpClock
                 cmd.Parameters.AddWithValue("@key", key);
                 cmd.Parameters.AddWithValue("@val", value);
                 cmd.ExecuteNonQuery();
+                return true;
             }
         }
 
-        public override void Delete(string key)
+        public bool Delete(string key)
         {
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
@@ -43,12 +47,13 @@ namespace SharpClock
                 cmd.Parameters.AddWithValue("@mod", _moduleName);
                 cmd.Parameters.AddWithValue("@key", key);
                 cmd.ExecuteNonQuery();
+                return true;
             }
         }
 
-        public override IReadOnlyDictionary<string, string> GetAll()
+        public IReadOnlyDictionary<string, object> GetAll()
         {
-            var dict = new Dictionary<string, string>();
+            var dict = new Dictionary<string, object>();
             using (var conn = Config.Open())
             using (var cmd = conn.CreateCommand())
             {

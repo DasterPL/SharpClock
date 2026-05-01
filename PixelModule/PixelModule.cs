@@ -13,18 +13,18 @@ namespace SharpClock
         static protected IPixelDraw Screen { get; private set; }
         static protected IGPIO GPIOevents { get; private set; }
         static protected IPixelRenderer pixelRenderer { get; private set; }
-        static Func<string, Storage> _storageFactory;
+        static Func<string, IStorage> _storageFactory;
 
         public static void SetScreen(IPixelDraw screen) => Screen = screen;
         public static void SetGPIO(IGPIO gpio) => GPIOevents = gpio;
         public static void SetRenderer(IPixelRenderer pixelRenderer) => PixelModule.pixelRenderer = pixelRenderer;
-        public static void SetStorageFactory(Func<string, Storage> factory) => _storageFactory = factory;
+        public static void SetStorageFactory(Func<string, IStorage> factory) => _storageFactory = factory;
 
         Stopwatch Stopwatch;
 
         public string Name { get => GetType().Name; }
         public string Icon { get; set; } = "view_module";
-        protected Storage Storage { get; private set; }
+        protected IStorage Storage { get; private set; }
         public bool Visible { get; set; } = true;
         public int Timer { get; set; } = 10000;
         protected int Tickrate { get; set; } = 1000;
