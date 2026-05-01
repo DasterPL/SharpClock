@@ -121,6 +121,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
+    <Compile Include="Converter.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="ModuleStorage.cs" />
     <Compile Include="WebPage\POST_File.cs" />

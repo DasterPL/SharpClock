@@ -19,7 +19,7 @@ namespace SharpClock
                 cmd.Parameters.AddWithValue("@key", key);
                 var result = cmd.ExecuteScalar()?.ToString();
                 if (result == null) return defaultValue;
-                try { return SettingsBuilder.Convert<T>(result); }
+                try { return Converter.To<T>(result); }
                 catch { return defaultValue; }
             }
         }

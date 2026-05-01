@@ -205,7 +205,7 @@ namespace SharpClock
             {
                 try
                 {
-                    string value = SettingsBuilder.Serialize(entry.ValueType, entry.Get());
+                    string value = Converter.Serialize(entry.ValueType, entry.Get());
                     using (var cmd = conn.CreateCommand())
                     {
                         cmd.CommandText = "INSERT OR REPLACE INTO module_params (module_name, key, value) VALUES (@mod, @key, @val)";

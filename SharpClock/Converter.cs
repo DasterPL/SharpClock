@@ -1,33 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 
 namespace SharpClock
 {
-    public class SettingsBuilder
+    static class Converter
     {
-        readonly List<SettingsEntry> _entries = new List<SettingsEntry>();
-        public IReadOnlyList<SettingsEntry> All => _entries;
-
-        public SettingsEntry Add<T>(string key, Func<T> get, Action<T> set)
-        {
-            var entry = new SettingsEntry(this, key, typeof(T), () => get(), v => set(Convert<T>(v)));
-            _entries.Add(entry);
-            return entry;
-        }
-
-        static T Convert<T>(object value)
+        public static T To<T>(object value)
         {
             if (value is T t) return t;
             var type = typeof(T);
             var s = value?.ToString() ?? "";
             if (type == typeof(string)) return (T)(object)s;
-            if (type == typeof(int)) return (T)(object)int.Parse(s);
-            if (type == typeof(float)) return (T)(object)float.Parse(s, CultureInfo.InvariantCulture);
-            if (type == typeof(bool)) return (T)(object)bool.Parse(s);
-            if (type == typeof(Color)) return (T)(object)ColorTranslator.FromHtml(s);
-            if (type.IsEnum) return (T)Enum.Parse(type, s);
+            if (type == typeof(int))    return (T)(object)int.Parse(s);
+            if (type == typeof(float))  return (T)(object)float.Parse(s, CultureInfo.InvariantCulture);
+            if (type == typeof(bool))   return (T)(object)bool.Parse(s);
+            if (type == typeof(Color))  return (T)(object)ColorTranslator.FromHtml(s);
+            if (type.IsEnum)            return (T)Enum.Parse(type, s);
             if (type == typeof(TimeSpan))
             {
                 var parts = Array.ConvertAll(s.Split(':'), int.Parse);
@@ -36,7 +25,7 @@ namespace SharpClock
             return (T)System.Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
         }
 
-        static string Serialize(Type type, object value)
+        public static string Serialize(Type type, object value)
         {
             if (type == typeof(Color))
             {
