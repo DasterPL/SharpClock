@@ -121,9 +121,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
-    <Compile Include="Converter.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="ModuleStorage.cs" />
+    <Compile Include="Storage.cs" />
     <Compile Include="WebPage\POST_File.cs" />
     <None Include="img\font_size">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

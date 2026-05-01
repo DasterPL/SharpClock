@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace SharpClock
 {
-    static class Converter
+    public static class Converter
     {
         public static T To<T>(object value)
         {

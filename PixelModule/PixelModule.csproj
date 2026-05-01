@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Converter.cs" />
     <Compile Include="GifImage.cs" />
     <Compile Include="IStorage.cs" />
     <Compile Include="SettingsEntry.cs" />
