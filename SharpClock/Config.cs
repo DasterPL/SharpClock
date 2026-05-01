@@ -46,6 +46,12 @@ namespace SharpClock
                         PRIMARY KEY (module_name, key),
                         FOREIGN KEY (module_name) REFERENCES modules(name) ON DELETE CASCADE
                     );
+                    CREATE TABLE IF NOT EXISTS module_storage (
+                        module_name TEXT NOT NULL,
+                        key         TEXT NOT NULL,
+                        value       TEXT NOT NULL,
+                        PRIMARY KEY (module_name, key)
+                    );
                     INSERT OR IGNORE INTO properties VALUES ('brightness', '10');
                     INSERT OR IGNORE INTO properties VALUES ('animated_switching', 'False');
                 ";
@@ -53,7 +59,7 @@ namespace SharpClock
             }
         }
 
-        static SqliteConnection Open()
+        internal static SqliteConnection Open()
         {
             var conn = new SqliteConnection(ConnStr);
             conn.Open();
