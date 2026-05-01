@@ -32,12 +32,14 @@ namespace PixelFoxCloud
         long _prevStopwatchMs = -1;
         long _accSubModuleMs = 0;
 
-        GifImage logo;
+        static readonly GifImage _logo = new GifImage(Image.FromStream(
+            Assembly.GetExecutingAssembly().GetManifestResourceStream("PixelFoxCloud.assets.logo.gif")));
+        static readonly Image _storedIcon = Image.FromStream(
+            Assembly.GetExecutingAssembly().GetManifestResourceStream("PixelFoxCloud.assets.Stored.png"));
 
         public PixelFoxCloud()
         {
             Icon = "bolt";
-            logo = new GifImage(Image.FromStream(Assembly.GetExecutingAssembly().GetManifestResourceStream("PixelFoxCloud.logo.gif")));
             Tickrate = 1000 * 60 * 5;
 
             Settings
@@ -62,18 +64,17 @@ namespace PixelFoxCloud
 
         void DrawPvPower()
         {
-            Screen.SetImage(logo.Advance(), 0);
+            Screen.SetImage(_logo.Advance(), 0);
             if (!hasData) { Screen.SetText("---", Color.DarkRed, 9); return; }
             string val = pvPower >= 1f
                 ? pvPower.ToString("#.##") + "k"
                 : ((int)(pvPower * 1000)).ToString() + "W";
-            int pos = Screen.SetText(val, Color.DarkGreen, 9, 1);
-            //Screen.SetText("W", Color.Green, pos, 0);
+            Screen.SetText(val, Color.DarkGreen, 9, 1);
         }
 
         void DrawToday()
         {
-            Screen.SetImage(logo.Advance(), 0);
+            Screen.SetImage(_storedIcon, 0);
             if (!hasData) { Screen.SetText("---", Color.DarkRed, 9); return; }
             int pos = Screen.SetText(todayYield.ToString("#.#"), Color.DarkGoldenrod, 9, 1);
             Screen.SetText("k", Color.Goldenrod, pos + 1, 0);

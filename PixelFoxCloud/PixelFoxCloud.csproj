@@ -59,7 +59,8 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="logo.gif" />
+    <EmbeddedResource Include="assets\logo.gif" />
+    <EmbeddedResource Include="assets\Stored.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
