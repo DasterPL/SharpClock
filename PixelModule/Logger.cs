@@ -9,10 +9,7 @@ namespace SharpClock
 
     public static class Logger
     {
-        static ILogger _impl;
-        public static string LogFile => _impl?.LogFile;
-        public static void SetImpl(ILogger impl) => _impl = impl;
+        internal static ILogger _impl;
         public static void Log(params object[] args) => _impl?.Log(args);
-        public static void Clear() => _impl?.Clear();
     }
 }

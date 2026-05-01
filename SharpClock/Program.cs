@@ -9,10 +9,12 @@ namespace SharpClock
     class Program
     {
         public static Stopwatch UpTime;
+        public static ILogger AppLogger { get; private set; }
         static HttpServer WebServer;
         static void Main()
         {
-            Logger.SetImpl(new FileLogger());
+            AppLogger = new FileLogger();
+            PixelModule.SetLogger(AppLogger);
             PixelModule.SetSettingsFactory(() => new SettingsBuilder());
             PixelModule.SetStorageFactory(name => new Storage(name));
 

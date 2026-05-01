@@ -19,6 +19,7 @@ namespace SharpClock
         public static void SetScreen(IPixelDraw screen) => Screen = screen;
         public static void SetGPIO(IGPIO gpio) => GPIOevents = gpio;
         public static void SetRenderer(IPixelRenderer pixelRenderer) => PixelModule.pixelRenderer = pixelRenderer;
+        public static void SetLogger(ILogger logger) => Logger._impl = logger;
         public static void SetStorageFactory(Func<string, IStorage> factory) => _storageFactory = factory;
         public static void SetSettingsFactory(Func<ISettingsBuilder> factory) => _settingsFactory = factory;
 

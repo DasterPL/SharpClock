@@ -130,7 +130,7 @@ namespace SharpClock
             // GET /log
             if (method == "GET" && path == "/log")
             {
-                string logFile = Logger.LogFile;
+                string logFile = Program.AppLogger.LogFile;
                 if (!File.Exists(logFile))
                     return JArray.FromObject(new string[0]);
                 var lines = File.ReadAllLines(logFile);
@@ -141,7 +141,7 @@ namespace SharpClock
             // DELETE /log
             if (method == "DELETE" && path == "/log")
             {
-                Logger.Clear();
+                Program.AppLogger.Clear();
                 return Ok(true);
             }
 
