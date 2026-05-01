@@ -27,6 +27,11 @@ namespace SharpClock
             },
             new Function()
             {
+                Name = "Restart Uslugi",
+                Action = ()=>{Program.Kill();  Process.Start("/bin/bash", "-c \"systemctl restart SharpClock\""); Environment.Exit(0); }
+            },
+            new Function()
+            {
                 Name = "Restart",
                 Action = ()=>{Program.Kill();  Process.Start("/bin/bash", "-c \"reboot\""); }
             },

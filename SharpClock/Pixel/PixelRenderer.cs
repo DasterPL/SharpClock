@@ -49,12 +49,15 @@ namespace SharpClock
                     NextModule();
                     break;
                 case ButtonId.LongNext:
+                    if (modules.Any(m => m is SettingModule)) break;
                     SettingModule settingModule = new SettingModule();
                     modules.Add(settingModule);
                     settingModule.Start(Program.UpTime);
                     SwitchModule(settingModule, true);
                     new Thread(() =>
                     {
+                        while (settingModule.IsRunning && Current != settingModule)
+                            Thread.Sleep(50);
                         while (settingModule.IsRunning)
                         {
                             if (Current != settingModule)
@@ -169,7 +172,9 @@ namespace SharpClock
         {
             Logger.Log("Stopping Renderer");
             stop = true;
-            while (IsRunning) Thread.Sleep(10);
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (IsRunning && DateTime.UtcNow < deadline) Thread.Sleep(10);
+            if (IsRunning) Logger.Log(ConsoleColor.Red, "Renderer did not stop in time, forcing shutdown");
             Logger.Log("Stopping modules");
             foreach (var module in modules)
             {
