@@ -61,6 +61,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Humidity.png" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="BME280.cs" />
     <Compile Include="PixelSensor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Reflection;
 using SharpClock;
 
 namespace PixelSensor
@@ -17,6 +18,9 @@ namespace PixelSensor
         public PressureMode PressureDisplay { get; set; } = PressureMode.Actual;
         public float Altitude { get; set; } = 0f;
         public float TemperatureOffset { get; set; } = 0f;
+
+        static readonly Image _humidityIcon = Image.FromStream(
+            Assembly.GetExecutingAssembly().GetManifestResourceStream("PixelSensor.Humidity.png"));
 
         BME280 sensor;
         float temperature = 0;
@@ -69,11 +73,10 @@ namespace PixelSensor
 
         void DrawHumidity()
         {
-            if (_sensorError) { Screen.SetText("---", Color.DarkRed, 0); return; }
-            string val = ((int)Math.Round(humidity)).ToString();
-            int start = (32 - Screen.TextLength(val + "%")) / 2;
-            int pos = Screen.SetText(val, Color.Cyan, start);
-            Screen.SetText("%", Color.DodgerBlue, pos);
+            Screen.SetImage(_humidityIcon, 0);
+            if (_sensorError) { Screen.SetText("---", Color.DarkRed, 9); return; }
+            string val = ((int)Math.Round(humidity)).ToString() + "%";
+            Screen.SetText(val, Color.Cyan, 9);
         }
 
         void DrawPressure()
