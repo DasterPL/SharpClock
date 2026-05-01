@@ -121,12 +121,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
+    <Compile Include="Logger.cs" />
     <Compile Include="WebPage\POST_File.cs" />
     <None Include="img\font_size">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="GPIO\Bluetooth.cs" />
     <Compile Include="GPIO\GPIO.cs" />
+    <Compile Include="Pixel\NullModule.cs" />
     <Compile Include="Pixel\SettingModule.cs" />
     <Compile Include="WebPage\PostHandler.cs" />
     <Compile Include="Pixel\LoadingAnimation.cs" />

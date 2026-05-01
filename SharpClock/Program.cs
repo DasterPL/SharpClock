@@ -12,6 +12,8 @@ namespace SharpClock
         static HttpServer WebServer;
         static void Main()
         {
+            Logger.SetImpl(new FileLogger());
+
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 Logger.Log(ConsoleColor.Red, $"[FATAL] {e.ExceptionObject}");

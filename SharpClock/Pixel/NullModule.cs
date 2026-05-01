@@ -4,15 +4,15 @@ using System.Drawing;
 
 namespace SharpClock
 {
-    public class NullModule : PixelModule
+    class NullModule : PixelModule
     {
         const int W = 32, H = 8, TrailLen = 4;
 
         static readonly Color[] Trail = {
             Color.FromArgb(0, 255, 80),
             Color.FromArgb(0, 180, 40),
-            Color.FromArgb(0, 90, 20),
-            Color.FromArgb(0, 35,  8),
+            Color.FromArgb(0,  90, 20),
+            Color.FromArgb(0,  35,  8),
         };
 
         readonly int[] _cyclePeriod  = new int[W];
