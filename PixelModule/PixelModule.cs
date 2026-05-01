@@ -14,11 +14,13 @@ namespace SharpClock
         static protected IGPIO GPIOevents { get; private set; }
         static protected IPixelRenderer pixelRenderer { get; private set; }
         static Func<string, IStorage> _storageFactory;
+        static Func<ISettingsBuilder> _settingsFactory;
 
         public static void SetScreen(IPixelDraw screen) => Screen = screen;
         public static void SetGPIO(IGPIO gpio) => GPIOevents = gpio;
         public static void SetRenderer(IPixelRenderer pixelRenderer) => PixelModule.pixelRenderer = pixelRenderer;
         public static void SetStorageFactory(Func<string, IStorage> factory) => _storageFactory = factory;
+        public static void SetSettingsFactory(Func<ISettingsBuilder> factory) => _settingsFactory = factory;
 
         Stopwatch Stopwatch;
 
@@ -31,11 +33,12 @@ namespace SharpClock
         public bool IsRunning { get; private set; } = false;
         CancellationTokenSource tokenSource;
 
-        public SettingsBuilder Settings { get; } = new SettingsBuilder();
+        public ISettingsBuilder Settings { get; private set; }
 
         protected PixelModule()
         {
             Storage = _storageFactory?.Invoke(GetType().Name);
+            Settings = _settingsFactory?.Invoke();
             Settings
                 .Add(nameof(Visible), () => Visible, v => Visible = v)
                     .Label("pl", "Widoczny").Label("en", "Visible")

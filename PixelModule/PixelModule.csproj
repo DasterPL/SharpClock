@@ -44,9 +44,9 @@
   <ItemGroup>
     <Compile Include="Converter.cs" />
     <Compile Include="GifImage.cs" />
+    <Compile Include="ISettingsBuilder.cs" />
+    <Compile Include="ISettingsEntry.cs" />
     <Compile Include="IStorage.cs" />
-    <Compile Include="SettingsEntry.cs" />
-    <Compile Include="SettingsBuilder.cs" />
     <Compile Include="IGPIO.cs" />
     <Compile Include="IPixelDraw.cs" />
     <Compile Include="IPixelRenderer.cs" />

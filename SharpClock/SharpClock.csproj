@@ -122,6 +122,8 @@
   <ItemGroup>
     <Compile Include="Config.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="SettingsBuilder.cs" />
+    <Compile Include="SettingsEntry.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="WebPage\POST_File.cs" />
     <None Include="img\font_size">
