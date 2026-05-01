@@ -89,7 +89,7 @@ namespace SharpClock
 
                 foreach (Type type in dll.GetExportedTypes())
                 {
-                    if (type.BaseType != typeof(PixelModule)) continue;
+                    if (!typeof(PixelModule).IsAssignableFrom(type) || type.IsAbstract) continue;
                     try
                     {
                         PixelModule tmp = (PixelModule)Activator.CreateInstance(type);
