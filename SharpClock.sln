@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PixelWebhook", "PixelWebhoo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PixelTimer", "PixelTimer\PixelTimer.csproj", "{A3F7C2E1-5B4D-4E8F-9A1B-6C2D3E4F5A6B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniOrm", "MiniOrm\MiniOrm.csproj", "{31C05F60-1997-4862-A0F6-670A79753328}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -113,6 +115,14 @@ Global
 		{A3F7C2E1-5B4D-4E8F-9A1B-6C2D3E4F5A6B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A3F7C2E1-5B4D-4E8F-9A1B-6C2D3E4F5A6B}.Release|x86.ActiveCfg = Release|Any CPU
 		{A3F7C2E1-5B4D-4E8F-9A1B-6C2D3E4F5A6B}.Release|x86.Build.0 = Release|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Debug|x86.Build.0 = Debug|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Release|x86.ActiveCfg = Release|Any CPU
+		{31C05F60-1997-4862-A0F6-670A79753328}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
