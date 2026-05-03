@@ -49,6 +49,8 @@
     <Compile Include="PixelWeather.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Weather.cs" />
+    <Compile Include="WeatherConfig.cs" />
+    <Compile Include="WeatherService.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Weather\Clear.gif" />
