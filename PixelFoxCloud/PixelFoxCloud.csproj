@@ -45,6 +45,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FoxConfig.cs" />
+    <Compile Include="FoxEssClient.cs" />
+    <Compile Include="FoxService.cs" />
     <Compile Include="PixelFoxVolt.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
