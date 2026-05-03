@@ -12,7 +12,7 @@ namespace SharpClock
 {
     class PixelDraw : IPixelDraw
     {
-        public static IPixelDraw Screen { get; private set; }
+        internal static IPixelDraw Screen { get; private set; }
         ws281x.Net.Neopixel neopixel;
 
         void movePixels(int offset = 1)
@@ -74,7 +74,7 @@ namespace SharpClock
         readonly int[] PixelHw;
         const int LedCount = 256;
         static readonly Color White = Color.FromArgb(255, 255, 255);
-        public PixelDraw()
+        internal PixelDraw()
         {
             if (Screen == null)
             {
@@ -84,7 +84,7 @@ namespace SharpClock
             {
                 throw new Exception("Can't create more screens");
             }
-            neopixel = new ws281x.Net.Neopixel(ledCount: LedCount, pin: 18, stripType: rpi_ws281x.WS2811_STRIP_GRB, 800000, 10, false, 16, 0);
+            neopixel = new ws281x.Net.Neopixel(ledCount: LedCount, pin: HardwareConfig.LedPin, stripType: rpi_ws281x.WS2811_STRIP_GRB, (uint)HardwareConfig.LedFreq, HardwareConfig.LedDma, false, 16, 0);
             neopixel.Begin();
             PixelHw = new int[LedCount];
             for (int i = 0; i < LedCount; i++)

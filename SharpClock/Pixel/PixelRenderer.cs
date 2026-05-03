@@ -11,7 +11,7 @@ namespace SharpClock
 {
     class PixelRenderer : IPixelRenderer
     {
-        public static IPixelRenderer Pixel { get; private set; }
+        internal static IPixelRenderer Pixel { get; private set; }
         Thread drawThread;
         List<PixelModule> modules = new List<PixelModule>();
         IPixelDraw Screen;
@@ -25,7 +25,7 @@ namespace SharpClock
         public bool AnimatedSwitching { get; set; } = false;
         public PixelModule[] GetModules { get => modules.ToArray(); }
 
-        public PixelRenderer(IPixelDraw Screen)
+        internal PixelRenderer(IPixelDraw Screen)
         {
             if (Pixel == null)
             {
@@ -87,6 +87,19 @@ namespace SharpClock
             {
                 Assembly dll = Assembly.LoadFile(absolutePath);
 
+                int prevGlobalCount = PixelGlobalSettings.All.Count;
+                foreach (Type type in dll.GetExportedTypes())
+                {
+                    if (!typeof(PixelGlobalSettings).IsAssignableFrom(type) || type.IsAbstract) continue;
+                    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                }
+                for (int i = prevGlobalCount; i < PixelGlobalSettings.All.Count; i++)
+                {
+                    var gs = PixelGlobalSettings.All[i];
+                    gs.Load(Config.GetGlobalParams(gs.Name));
+                    Logger.Log(ConsoleColor.Green, $"[GlobalSettings] Loaded: {gs.Name}");
+                }
+
                 foreach (Type type in dll.GetExportedTypes())
                 {
                     if (!typeof(PixelModule).IsAssignableFrom(type) || type.IsAbstract) continue;
@@ -94,11 +107,11 @@ namespace SharpClock
                     {
                         PixelModule tmp = (PixelModule)Activator.CreateInstance(type);
                         Logger.Log(ConsoleColor.Blue, $"[{type.Name}]:", ConsoleColor.White, "Loading module");
-                        var moduleCfg = Config.Instance.GetModule(type.Name);
+                        var moduleCfg = Config.GetModule(type.Name);
                         if (moduleCfg == null)
                         {
                             Logger.Log(ConsoleColor.Blue, $"[{type.Name}]", ConsoleColor.Cyan, " Config not found, creating new");
-                            Config.Instance.CreateModule(tmp);
+                            Config.CreateModule(tmp);
                         }
                         else
                         {
@@ -119,7 +132,7 @@ namespace SharpClock
                         }
 
                         if (moduleCfg == null)
-                            moduleCfg = Config.Instance.GetModule(type.Name);
+                            moduleCfg = Config.GetModule(type.Name);
 
                         if (moduleCfg?.Start == true)
                         {
@@ -160,9 +173,8 @@ namespace SharpClock
             }
             IsReady = true;
 
-            var cfg = Config.Instance;
-            Screen.Brightness = cfg.Brightness;
-            AnimatedSwitching = cfg.AnimatedSwitching;
+            Screen.Brightness = Config.Brightness;
+            AnimatedSwitching = Config.AnimatedSwitching;
             Logger.Log(ConsoleColor.Cyan, "System Ready!");
             drawThread = new Thread(Render);
             LoadingAnimation.Stop();
@@ -197,11 +209,10 @@ namespace SharpClock
         readonly Stopwatch _nullTimer = Stopwatch.StartNew();
         void Render()
         {
-            var config = Config.Instance;
             stop = false;
             IsRunning = true;
 
-            moduleOrder = config.ModuleOrder;
+            moduleOrder = Config.ModuleOrder;
             modules = modules.OrderBy(m => Array.IndexOf(moduleOrder, m.Name)).ToList();
             while (!stop)
             {
@@ -247,7 +258,7 @@ namespace SharpClock
                         }
                         Screen.Draw();
                         int end = (int)timer.ElapsedMilliseconds;
-                        int elapsed = 33 - (end - start);
+                        int elapsed = HardwareConfig.FrameMs - (end - start);
                         int delay = elapsed > 0 ? elapsed : 0;
                         Thread.Sleep(delay);
                     }
@@ -314,9 +325,9 @@ namespace SharpClock
                 Logger.Log(ConsoleColor.Blue, $"[{m.Name}]:", ConsoleColor.White, "Unloaded");
             }
         }
-        public void UpdateConfig()
+        public void UpdateConfig(PixelModule module)
         {
-            Config.Instance.EditModules(modules.ToArray());
+            Config.EditModule(module);
         }
     }
 }

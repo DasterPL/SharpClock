@@ -12,7 +12,7 @@ namespace SharpClock
     {
         static bool stop = false;
         static bool isStoped = false;
-        public static void Stop()
+        internal static void Stop()
         {
             stop = true;
             while (!isStoped) Thread.Sleep(10);
@@ -26,7 +26,7 @@ namespace SharpClock
             return p;
         }
 
-        public static void Run(IPixelDraw Screen)
+        internal static void Run(IPixelDraw Screen)
         {
             new Thread(() =>
             {

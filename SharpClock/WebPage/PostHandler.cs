@@ -44,7 +44,7 @@ namespace SharpClock
             // PUT /modules/order
             if (method == "PUT" && path == "/modules/order")
             {
-                Config.Instance.SortModules(q["order[]"].Split(','));
+                Config.SortModules(q["order[]"].Split(','));
                 PixelRenderer.Pixel.Reload();
                 return Ok(true);
             }
@@ -94,6 +94,14 @@ namespace SharpClock
                 return r;
             }
 
+            // GET /globalSettings
+            if (method == "GET" && path == "/globalSettings")
+                return BuildGlobalSettings();
+
+            // PATCH /globalSettings/{name}
+            if (method == "PATCH" && path.StartsWith("/globalSettings/"))
+                return ModifyGlobalSettings(path.Substring("/globalSettings/".Length), q);
+
             // GET /properties
             if (method == "GET" && path == "/properties")
                 return BuildProperties();
@@ -104,12 +112,12 @@ namespace SharpClock
                 if (byte.TryParse(q["Brightness"], out byte br))
                 {
                     PixelDraw.Screen.Brightness = br;
-                    Config.Instance.Brightness = br;
+                    Config.Brightness = br;
                 }
                 if (bool.TryParse(q["AnimatedSwitching"], out bool anim))
                 {
                     PixelRenderer.Pixel.AnimatedSwitching = anim;
-                    Config.Instance.AnimatedSwitching = anim;
+                    Config.AnimatedSwitching = anim;
                 }
                 return BuildProperties();
             }
@@ -130,19 +138,11 @@ namespace SharpClock
             // GET /log
             if (method == "GET" && path == "/log")
             {
-                string logFile = Program.AppLogger.LogFile;
-                if (!File.Exists(logFile))
+                string logContent = Program.AppLogger.GetLog(300);
+                if (string.IsNullOrEmpty(logContent))
                     return JArray.FromObject(new string[0]);
-                var lines = File.ReadAllLines(logFile);
-                int skip = Math.Max(0, lines.Length - 300);
-                return JArray.FromObject(lines.Skip(skip).ToArray());
-            }
-
-            // DELETE /log
-            if (method == "DELETE" && path == "/log")
-            {
-                Program.AppLogger.Clear();
-                return Ok(true);
+                var lines = logContent.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+                return JArray.FromObject(lines);
             }
 
             // GET /plugins
@@ -191,15 +191,10 @@ namespace SharpClock
             // POST /system/shutdown
             if (method == "POST" && path == "/system/shutdown")
             {
+                bool restart = q["hard"] == "restart";
                 Program.Kill();
-                if (q["hard"] == "true")
-                    Process.Start("/bin/bash", "-c \"shutdown 0\"");
-                else if (q["hard"] == "reboot")
-                    Process.Start("/bin/bash", "-c \"reboot\"");
-                else if (q["hard"] == "restart")
-                    Process.Start("/bin/bash", "-c \"systemctl restart SharpClock\"");
-                Environment.Exit(0);
-                return Ok("shutting_down");
+                Environment.Exit(restart ? 1 : 0);
+                return Ok(restart ? "restarting" : "shutting_down");
             }
 
             // GET /wifi
@@ -321,6 +316,7 @@ namespace SharpClock
                 m.Name = module.Name;
                 m.Status = module.IsRunning ? "started" : "stopped";
                 m.Icon = module.Icon;
+                m.Dll = Path.GetFileNameWithoutExtension(module.GetType().Assembly.Location);
                 JArray v = new JArray();
                 foreach (var entry in module.Settings.All)
                 {
@@ -394,6 +390,90 @@ namespace SharpClock
             return json;
         }
 
+        static JArray BuildGlobalSettings()
+        {
+            var json = new JArray();
+            foreach (var gs in PixelGlobalSettings.All)
+            {
+                dynamic g = new JObject();
+                g.Name = gs.Name;
+                var entries = new JArray();
+                foreach (var entry in gs.Settings.All)
+                {
+                    if (entry.Visibility != null && !entry.Visibility()) continue;
+                    dynamic p = new JObject();
+                    p.Name = entry.Key;
+                    p.VisibleName = new JArray();
+                    foreach (var kvp in entry.Labels)
+                    {
+                        dynamic vnObj = new JObject();
+                        vnObj.lang  = kvp.Key;
+                        vnObj.value = kvp.Value;
+                        p.VisibleName.Add(vnObj);
+                    }
+                    if (entry.Min.HasValue) p.min = entry.Min.Value;
+                    if (entry.Max.HasValue) p.max = entry.Max.Value;
+                    if (entry.Step.HasValue) p.step = entry.Step.Value;
+                    if (entry.IsMultiline) p.multiline = true;
+                    if (entry.IsPassword)
+                    {
+                        p.Value = "";
+                        p.type  = "Password";
+                    }
+                    else if (entry.ValueType == typeof(System.Drawing.Color))
+                    {
+                        var c = (System.Drawing.Color)entry.Get();
+                        p.Value = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+                        p.type  = "Color";
+                    }
+                    else if (entry.ValueType == typeof(float))
+                    {
+                        p.Value = ((float)entry.Get()).ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        p.type  = "Single";
+                    }
+                    else if (entry.ValueType.IsEnum)
+                    {
+                        p.Value = entry.Get().ToString();
+                        p.type  = "Enum";
+                        p.options = string.Join(",", Enum.GetNames(entry.ValueType));
+                    }
+                    else
+                    {
+                        p.Value = entry.Get().ToString();
+                        p.type  = entry.ValueType.Name;
+                    }
+                    entries.Add(p);
+                }
+                g.Values = entries;
+                json.Add(g);
+            }
+            return json;
+        }
+
+        static JObject ModifyGlobalSettings(string name, NameValueCollection q)
+        {
+            var gs = PixelGlobalSettings.All.FirstOrDefault(g => g.Name == name);
+            if (gs == null) return Err("GlobalSettings not found");
+
+            foreach (var entry in gs.Settings.All)
+            {
+                string val = q[entry.Key];
+                if (val == null) continue;
+                try
+                {
+                    entry.Set(val);
+                    Logger.Log(ConsoleColor.DarkMagenta, "GlobalSetting: ", ConsoleColor.White,
+                        $"{entry.Key} = {entry.Get()}, Type: {entry.ValueType.Name}");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log(ConsoleColor.Blue, $"[{gs.Name}]:", ConsoleColor.Red, $"Failed to set {entry.Key}: {ex.Message}");
+                }
+            }
+            Config.EditGlobalSettings(gs);
+            return Ok(gs.Name);
+        }
+
         static JObject ModifyModule(string name, NameValueCollection q)
         {
             var module = PixelRenderer.Pixel.GetModule(name);
@@ -421,7 +501,7 @@ namespace SharpClock
                     Logger.Log(ConsoleColor.Blue, $"[{module.Name}]:", ConsoleColor.Red, $"Failed to set {entry.Key}: {ex.Message}");
                 }
             }
-            Config.Instance.EditModules(PixelRenderer.Pixel.GetModules);
+            Config.EditModule(module);
 
             dynamic result = new JObject();
             result.Name = module.Name;

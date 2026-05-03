@@ -10,7 +10,7 @@ namespace SharpClock
         {
             return "--" + ctype.Split(';')[1].Split('=')[1];
         }
-        public static void SaveFile(string path, Stream input, Encoding enc, string ctype)
+        internal static void SaveFile(string path, Stream input, Encoding enc, string ctype)
         {
             byte[] boundaryBytes = enc.GetBytes(GetBoundary(ctype));
             int boundaryLen = boundaryBytes.Length;

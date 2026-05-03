@@ -32,7 +32,7 @@ namespace SharpClock
         static readonly System.Collections.Generic.HashSet<string> SilentPaths =
             new System.Collections.Generic.HashSet<string> { "/screen", "/log" };
 
-        public async Task HandleIncomingConnections()
+        private async Task HandleIncomingConnections()
         {
             while (runServer)
             {

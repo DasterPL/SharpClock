@@ -1,4 +1,4 @@
-﻿using Mono.Unix;
+using Mono.Unix;
 using Mono.Unix.Native;
 using System;
 using System.Diagnostics;
@@ -17,6 +17,7 @@ namespace SharpClock
             PixelModule.SetLogger(AppLogger);
             PixelModule.SetSettingsFactory(() => new SettingsBuilder());
             PixelModule.SetStorageFactory(name => new Storage(name));
+            PixelGlobalSettings.SetSettingsFactory(() => new SettingsBuilder());
 
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
@@ -42,7 +43,7 @@ namespace SharpClock
             WebServer.Start();
 
             Pixel.Start();
-            
+
             PostHandler postHandler = new PostHandler(WebServer);
         }
         public static void Kill()
@@ -55,7 +56,6 @@ namespace SharpClock
         }
         static void HandleUnixSignals()
         {
-            //Handle UNIX signals
             UnixSignal[] signals = new UnixSignal[]
             {
                 new UnixSignal(Signum.SIGINT),
@@ -80,4 +80,3 @@ namespace SharpClock
         }
     }
 }
-

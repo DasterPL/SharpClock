@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Unosquare.RaspberryIO;
@@ -13,12 +10,12 @@ namespace SharpClock
 {
     partial class GPIO : IGPIO
     {
-        public static IGPIO GPIOevents { get; private set; }
+        internal static IGPIO GPIOevents { get; private set; }
         bool[] buttonsStatus = new bool[5];
         bool longButtonStatus = false;
         public event ButtonEventArgs OnButtonClick;
         IGpioPin buzzer;
-        public GPIO()
+        internal GPIO()
         {
             if(GPIOevents == null)
             {
@@ -32,11 +29,11 @@ namespace SharpClock
             Pi.Init<BootstrapWiringPi>();
 
             //Buzzer
-            buzzer = Pi.Gpio[25];
+            buzzer = Pi.Gpio[HardwareConfig.BuzzerPin];
             buzzer.PinMode = GpioPinDriveMode.Output;
 
             //buttons
-            IGpioPin[] buttons = { Pi.Gpio[17], Pi.Gpio[27], Pi.Gpio[22], Pi.Gpio[23], Pi.Gpio[24] };
+            IGpioPin[] buttons = { Pi.Gpio[HardwareConfig.BtnPause], Pi.Gpio[HardwareConfig.BtnNext], Pi.Gpio[HardwareConfig.BtnUser1], Pi.Gpio[HardwareConfig.BtnUser2], Pi.Gpio[HardwareConfig.BtnUser3] };
 
             for (int i = 0; i < buttonsStatus.Length; i++)
             {
@@ -55,71 +52,43 @@ namespace SharpClock
 
                         if (button.Value)
                         {
-                            switch (button.BcmPinNumber)
-                            {
-                                case 17:
-                                    if (!buttonsStatus[0])
-                                        OnButtonClick?.Invoke(ButtonId.Pause);
-                                    buttonsStatus[0] = true;
-                                    break;
-                                case 27:
-                                    nextLongPressTimer.Start();
-                                    if (!buttonsStatus[1])
-                                        OnButtonClick?.Invoke(ButtonId.Next);
-                                    if (!longButtonStatus && nextLongPressTimer.ElapsedMilliseconds >= 3000) 
-                                    {
-                                        OnButtonClick?.Invoke(ButtonId.LongNext);
-                                        longButtonStatus = true;
-                                    }
-                                    buttonsStatus[1] = true;
-                                    break;
-                                case 22:
-                                    if (!buttonsStatus[2])
-                                        OnButtonClick?.Invoke(ButtonId.User1);
-                                    buttonsStatus[2] = true;
-                                    break;
-                                case 23:
-                                    if (!buttonsStatus[3])
-                                        OnButtonClick?.Invoke(ButtonId.User2);
-                                    buttonsStatus[3] = true;
-                                    break;
-                                case 24:
-                                    if (!buttonsStatus[4])
-                                        OnButtonClick?.Invoke(ButtonId.User3);
-                                    buttonsStatus[4] = true;
-                                    break;
+                            int pin = button.BcmPinNumber;
+                            if (pin == HardwareConfig.BtnPause) {
+                                if (!buttonsStatus[0]) OnButtonClick?.Invoke(ButtonId.Pause);
+                                buttonsStatus[0] = true;
+                            } else if (pin == HardwareConfig.BtnNext) {
+                                nextLongPressTimer.Start();
+                                if (!buttonsStatus[1]) OnButtonClick?.Invoke(ButtonId.Next);
+                                if (!longButtonStatus && nextLongPressTimer.ElapsedMilliseconds >= 3000) {
+                                    OnButtonClick?.Invoke(ButtonId.LongNext);
+                                    longButtonStatus = true;
+                                }
+                                buttonsStatus[1] = true;
+                            } else if (pin == HardwareConfig.BtnUser1) {
+                                if (!buttonsStatus[2]) OnButtonClick?.Invoke(ButtonId.User1);
+                                buttonsStatus[2] = true;
+                            } else if (pin == HardwareConfig.BtnUser2) {
+                                if (!buttonsStatus[3]) OnButtonClick?.Invoke(ButtonId.User2);
+                                buttonsStatus[3] = true;
+                            } else if (pin == HardwareConfig.BtnUser3) {
+                                if (!buttonsStatus[4]) OnButtonClick?.Invoke(ButtonId.User3);
+                                buttonsStatus[4] = true;
                             }
                         }
                         else
                         {
-                            switch (button.BcmPinNumber)
-                            {
-                                case 17:
-                                    buttonsStatus[0] = false;
-                                    break;
-                                case 27:
-                                    nextLongPressTimer.Reset();
-                                    buttonsStatus[1] = false;
-                                    longButtonStatus = false;
-                                    break;
-                                case 22:
-                                    buttonsStatus[2] = false;
-                                    break;
-                                case 23:
-                                    buttonsStatus[3] = false;
-                                    break;
-                                case 24:
-                                    buttonsStatus[4] = false;
-                                    break;
-                            }
+                            int pin = button.BcmPinNumber;
+                            if (pin == HardwareConfig.BtnPause)  { buttonsStatus[0] = false; }
+                            else if (pin == HardwareConfig.BtnNext)  { nextLongPressTimer.Reset(); buttonsStatus[1] = false; longButtonStatus = false; }
+                            else if (pin == HardwareConfig.BtnUser1) { buttonsStatus[2] = false; }
+                            else if (pin == HardwareConfig.BtnUser2) { buttonsStatus[3] = false; }
+                            else if (pin == HardwareConfig.BtnUser3) { buttonsStatus[4] = false; }
                         }
                         await Task.Delay(100);
                     }
                 });
                 ButtonTask.Start();
             }
-            //Bluetooth
-            //var bt = new Bluetooth();
         }
 
         public void EnableBuzzer(int amount = 3, int howLong = 100, int interval = 200)

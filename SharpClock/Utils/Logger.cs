@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Windows.Media;
 
 namespace SharpClock
 {
@@ -34,11 +35,6 @@ namespace SharpClock
                     File.Delete(f);
         }
 
-        public void Clear()
-        {
-            File.Delete(LogFile);
-        }
-
         public void Log(params object[] args)
         {
             string logString = "";
@@ -64,6 +60,37 @@ namespace SharpClock
 
             using (var sw = File.AppendText(LogFile))
                 sw.WriteLine(logString);
+        }
+        public string GetLog(int lines = -1)
+        {
+            if (!File.Exists(LogFile))
+                return "";
+            if (lines == -1)
+                return File.ReadAllText(LogFile);
+
+            using (var fs = new FileStream(LogFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                long pos = fs.Length;
+                int found = 0;
+                var buf = new byte[4096];
+                while (pos > 0 && found < lines)
+                {
+                    int chunk = (int)Math.Min(buf.Length, pos);
+                    pos -= chunk;
+                    fs.Seek(pos, SeekOrigin.Begin);
+                    fs.Read(buf, 0, chunk);
+                    for (int i = chunk - 1; i >= 0 && found < lines; i--)
+                        if (buf[i] == '\n')
+                            found++;
+                    if (found < lines) continue;
+                    // rewind to just after the last \n we counted
+                    for (int i = chunk - 1; i >= 0; i--)
+                        if (buf[i] == '\n') { pos += i + 1; break; }
+                }
+                fs.Seek(pos, SeekOrigin.Begin);
+                using (var sr = new StreamReader(fs))
+                    return sr.ReadToEnd();
+            }
         }
     }
 }

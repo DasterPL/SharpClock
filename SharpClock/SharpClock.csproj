@@ -72,9 +72,7 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Data.Sqlite">
-      <HintPath>..\packages\Mono.Data.Sqlite.1.0.61\lib\net40\Mono.Data.Sqlite.dll</HintPath>
-    </Reference>
+
     <Reference Include="Mono.Posix">
       <HintPath>.\Mono.Posix.dll</HintPath>
     </Reference>
@@ -120,16 +118,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Config.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="SettingsBuilder.cs" />
-    <Compile Include="SettingsEntry.cs" />
-    <Compile Include="Storage.cs" />
+    <Compile Include="Data\Config.cs" />
+    <Compile Include="Data\Database.cs" />
+    <Compile Include="Data\DatabaseModels.cs" />
+    <Compile Include="Data\ModuleConfig.cs" />
+    <Compile Include="Data\Storage.cs" />
+    <Compile Include="Settings\SettingsBuilder.cs" />
+    <Compile Include="Settings\SettingsEntry.cs" />
+    <Compile Include="Utils\Converter.cs" />
+    <Compile Include="Utils\HardwareConfig.cs" />
+    <Compile Include="Utils\Logger.cs" />
     <Compile Include="WebPage\POST_File.cs" />
     <None Include="img\font_size">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="GPIO\Bluetooth.cs" />
     <Compile Include="GPIO\GPIO.cs" />
     <Compile Include="Pixel\NullModule.cs" />
     <Compile Include="Pixel\SettingModule.cs" />
@@ -148,6 +150,10 @@
   </ItemGroup>
   <ItemGroup>
 <Content Include="favicon.ico" />
+    <Content Include="..\hardware.env">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>hardware.env</Link>
+    </Content>
     <Content Include="..\packages\sqlite3-win-x64\sqlite3.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>sqlite3.dll</Link>
@@ -178,6 +184,10 @@
     <ProjectReference Include="..\PixelModule\PixelModule.csproj">
       <Project>{1a8dfa98-cf57-4d00-8dfb-dc0dc46050c4}</Project>
       <Name>PixelModule</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MiniOrm\MiniOrm.csproj">
+      <Project>{31C05F60-1997-4862-A0F6-670A79753328}</Project>
+      <Name>MiniOrm</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
