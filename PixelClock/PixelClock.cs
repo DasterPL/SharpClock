@@ -100,7 +100,7 @@ namespace PixelClock
                     }
                 }).Start();
             }
-            pixelRenderer.UpdateConfig();
+            pixelRenderer.UpdateConfig(this);
         }
     }
 }

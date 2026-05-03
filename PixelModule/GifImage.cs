@@ -67,7 +67,5 @@ namespace SharpClock
             }
         }
 
-        [Obsolete("Use Advance() to tick animation or CurrentFrame for a pure getter")]
-        public Image GetCurrentFrame => Advance();
     }
 }

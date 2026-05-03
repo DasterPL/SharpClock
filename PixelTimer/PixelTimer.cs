@@ -160,7 +160,7 @@ namespace PixelTimer
                     Mode = Mode == TimerMode.Stopwatch ? TimerMode.Countdown : TimerMode.Stopwatch;
                     break;
             }
-            pixelRenderer.UpdateConfig();
+            pixelRenderer.UpdateConfig(this);
         }
     }
 }

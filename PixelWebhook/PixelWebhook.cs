@@ -154,7 +154,7 @@ namespace PixelWebhook
                 Speed += 10;
             else if (button == ButtonId.User3)
                 Speed -= 10;
-            pixelRenderer.UpdateConfig();
+            pixelRenderer.UpdateConfig(this);
         }
     }
 }

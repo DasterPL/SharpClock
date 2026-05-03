@@ -42,7 +42,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Converter.cs" />
     <Compile Include="GifImage.cs" />
     <Compile Include="ISettingsBuilder.cs" />
     <Compile Include="ISettingsEntry.cs" />
@@ -51,6 +50,7 @@
     <Compile Include="IPixelDraw.cs" />
     <Compile Include="IPixelRenderer.cs" />
     <Compile Include="Logger.cs" />
+    <Compile Include="PixelGlobalSettings.cs" />
     <Compile Include="PixelModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

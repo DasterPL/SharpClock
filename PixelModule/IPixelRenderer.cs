@@ -18,6 +18,6 @@ namespace SharpClock
         void Start();
         void Stop();
         bool SwitchModule(PixelModule module, bool forcePause = false);
-        void UpdateConfig();
+        void UpdateConfig(PixelModule module);
     }
 }

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,12 +13,12 @@ namespace SharpClock
         static Func<string, IStorage> _storageFactory;
         static Func<ISettingsBuilder> _settingsFactory;
 
-        public static void SetScreen(IPixelDraw screen) => Screen = screen;
-        public static void SetGPIO(IGPIO gpio) => GPIOevents = gpio;
-        public static void SetRenderer(IPixelRenderer pixelRenderer) => PixelModule.pixelRenderer = pixelRenderer;
-        public static void SetLogger(ILogger logger) => Logger._impl = logger;
-        public static void SetStorageFactory(Func<string, IStorage> factory) => _storageFactory = factory;
-        public static void SetSettingsFactory(Func<ISettingsBuilder> factory) => _settingsFactory = factory;
+        internal static void SetScreen(IPixelDraw screen) => Screen = screen;
+        internal static void SetGPIO(IGPIO gpio) => GPIOevents = gpio;
+        internal static void SetRenderer(IPixelRenderer pixelRenderer) => PixelModule.pixelRenderer = pixelRenderer;
+        internal static void SetLogger(ILogger logger) => Logger._impl = logger;
+        internal static void SetStorageFactory(Func<string, IStorage> factory) => _storageFactory = factory;
+        internal static void SetSettingsFactory(Func<ISettingsBuilder> factory) => _settingsFactory = factory;
 
         Stopwatch Stopwatch;
 
