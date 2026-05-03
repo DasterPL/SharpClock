@@ -109,7 +109,6 @@ namespace SharpClock
         {
             var ReadBuffer = bme280.ReadAddressByte((byte)eRegisters.BME280_REGISTER_CHIPID);
             if (ReadBuffer != BME280_Signature)
-            if (ReadBuffer != BME280_Signature)
                 throw new Exception("BME280::Begin Signature Mismatch.");
 
             init = true;
@@ -298,20 +297,6 @@ namespace SharpClock
 
             //Return the temperature as a float value
             return ((float)pres) / 256;
-        }
-        //Method to take the sea level pressure in Hectopascals(hPa) as a parameter and calculate the altitude using current pressure.
-        public float ReadAltitude(float seaLevel)
-        {
-            //Make sure the I2C device is initialized
-            if (!init) Begin();
-
-            //Read the pressure first
-            float pressure = ReadPreasure();
-            //Convert the pressure to Hectopascals(hPa)
-            pressure /= 100;
-
-            //Calculate and return the altitude using the international barometric formula
-            return 44330.0f * (1.0f - (float)Math.Pow((pressure / seaLevel), 0.1903f));
         }
         public float ReadHumidity()
         {
