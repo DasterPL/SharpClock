@@ -110,35 +110,27 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
           onDragStart={onDragStart}
           onTouchStart={onTouchStart}
         />
-        <Flex align="center" gap={2} flex={1}>
-          <i className="material-icons" style={{ fontSize: '20px' }}>{module.Icon}</i>
-          <Text fontWeight="medium">{module.Name}</Text>
+        <Flex align="center" gap={2} flex={1} minW={0}>
+          <i className="material-icons" style={{ fontSize: '20px', flexShrink: 0 }}>{module.Icon}</i>
+          <Text fontWeight="medium" lineClamp={1} minW={0}>
+            {module.Name}
+            {module.Dll !== module.Name && <Text as="span" fontWeight="normal" fontSize="xs" color="gray.400" ml={1}>{module.Dll}</Text>}
+          </Text>
         </Flex>
-        <Box
-          w="10px" h="10px" borderRadius="full"
-          bg={running ? 'green.400' : 'red.400'}
+        <Switch.Root
+          checked={running}
+          onCheckedChange={e => savePower(e.checked)}
+          onClick={e => e.stopPropagation()}
+          colorPalette="green"
           mr={2} flexShrink={0}
-        />
+        >
+          <Switch.HiddenInput />
+          <Switch.Control><Switch.Thumb /></Switch.Control>
+        </Switch.Root>
         <Accordion.ItemIndicator />
       </Accordion.ItemTrigger>
       <Accordion.ItemContent>
         <Stack p={3} gap={3}>
-          <Box
-            px={2} py={1} mx={-2} borderRadius="md"
-            _hover={{ bg: 'gray.100' }} _dark={{ _hover: { bg: 'whiteAlpha.100' } }}
-            transition="background 0.12s"
-          >
-            <Switch.Root
-              defaultChecked={running}
-              onCheckedChange={e => savePower(e.checked)}
-              width="full" display="flex" alignItems="center" justifyContent="space-between"
-            >
-              <Switch.HiddenInput />
-              <Switch.Label>{running ? lang.on : lang.off}</Switch.Label>
-              <Switch.Control><Switch.Thumb /></Switch.Control>
-            </Switch.Root>
-          </Box>
-
           {module.Values.map(field => (
             <Box
               key={field.Name}

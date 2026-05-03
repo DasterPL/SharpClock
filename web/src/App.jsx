@@ -3,6 +3,7 @@ import { Stack, Card, Heading } from '@chakra-ui/react'
 import { useColorMode } from './colorMode.jsx'
 import { get } from './api.js'
 import ModuleList from './ModuleList.jsx'
+import GlobalSettings from './GlobalSettings.jsx'
 import OptionsCard from './Options.jsx'
 import LogViewer from './LogViewer.jsx'
 import ScreenPreview from './ScreenPreview.jsx'
@@ -40,18 +41,21 @@ export default function App() {
   const [modules, setModules] = useState([])
   const [properties, setProperties] = useState(null)
   const [dlls, setDlls] = useState([])
+  const [globalSettings, setGlobalSettings] = useState([])
 
   useEffect(() => {
     async function load() {
       try {
-        const [modsRes, propsRes, dllsRes] = await Promise.all([
+        const [modsRes, propsRes, dllsRes, gsRes] = await Promise.all([
           get('/modules'),
           get('/properties'),
           get('/plugins'),
+          get('/globalSettings'),
         ])
         setModules(modsRes.Response ?? [])
         setProperties(propsRes.Response ?? {})
         setDlls(dllsRes.Response ?? [])
+        setGlobalSettings(gsRes.Response ?? [])
       } finally {
         setLoading(false)
       }
@@ -75,6 +79,17 @@ export default function App() {
               onPauseChange={p => setProperties(prev => ({ ...prev, Pause: p }))} />
           </Card.Body>
         </Card.Root>
+
+        {globalSettings.length > 0 && (
+          <Card.Root>
+            <Card.Header>
+              <Heading size="md">Global Settings</Heading>
+            </Card.Header>
+            <Card.Body>
+              <GlobalSettings globalSettings={globalSettings} setLoading={setLoading} />
+            </Card.Body>
+          </Card.Root>
+        )}
 
         <OptionsCard properties={properties} dlls={dlls} setDlls={setDlls} setLoading={setLoading} />
 
