@@ -62,34 +62,41 @@ namespace SharpClock
             {
                 Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Started");
                 tokenSource = new CancellationTokenSource();
-                Task updateTask = new Task(async () =>
+                if (Tickrate != int.MaxValue)
+                {
+                    Task updateTask = new Task(async () =>
+                    {
+                        IsRunning = true;
+                        while (!tokenSource.Token.IsCancellationRequested)
+                        {
+                            long start = stopwatch.ElapsedMilliseconds;
+                            try
+                            {
+                                Update(stopwatch);
+                            }
+                            catch (Exception e)
+                            {
+                                Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red, $"[Unhandled] {e.GetType().Name}: {e.Message}");
+                            }
+                            long end = stopwatch.ElapsedMilliseconds;
+                            try
+                            {
+                                int sleepMs = Math.Max(0, Tickrate - (int)(end - start));
+                                await Task.Delay(sleepMs, tokenSource.Token);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.White, " Stopped");
+                            }
+                        }
+                        IsRunning = false;
+                    });
+                    updateTask.Start();
+                }
+                else
                 {
                     IsRunning = true;
-                    while (!tokenSource.Token.IsCancellationRequested)
-                    {
-                        long start = stopwatch.ElapsedMilliseconds;
-                        try
-                        {
-                            Update(stopwatch);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red, $"[Unhandled] {e.GetType().Name}: {e.Message}");
-                        }
-                        long end = stopwatch.ElapsedMilliseconds;
-                        try
-                        {
-                            int sleepMs = Math.Max(0, Tickrate - (int)(end - start));
-                            await Task.Delay(sleepMs, tokenSource.Token);
-                        }
-                        catch (TaskCanceledException)
-                        {
-                            Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Stopped");
-                        }
-                    }
-                    IsRunning = false;
-                });
-                updateTask.Start();
+                }
             }
             else
                 Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.Red, "[Error]", ConsoleColor.White, " Can't start module again");
@@ -99,7 +106,10 @@ namespace SharpClock
             if (IsRunning)
             {
                 tokenSource.Cancel();
-                while (IsRunning) Thread.Sleep(10);
+                if (Tickrate == int.MaxValue)
+                    IsRunning = false;
+                else
+                    while (IsRunning) Thread.Sleep(10);
             }
         }
         public virtual void Reload()
@@ -107,7 +117,7 @@ namespace SharpClock
             Stop();
             Start(Stopwatch);
         }
-        protected abstract void Update(Stopwatch stopwatch);
+        protected virtual void Update(Stopwatch stopwatch) { }
         public abstract void Draw(Stopwatch stopwatch);
     }
 }
