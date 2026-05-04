@@ -17,6 +17,7 @@ namespace SharpClock
         IPixelDraw Screen;
         bool stop = false;
         bool nextModule = false;
+        volatile bool _manualNext = false;
 
         public bool IsReady { get; private set; } = false;
         public PixelModule Current { get; private set; }
@@ -216,7 +217,7 @@ namespace SharpClock
             modules = modules.OrderBy(m => Array.IndexOf(moduleOrder, m.Name)).ToList();
             while (!stop)
             {
-                bool anyActive = modules.Any(m => m.IsRunning && m.Visible);
+                bool anyActive = _manualNext || modules.Any(m => m.IsRunning && m.Visible && !m.ExcludeFromQueue);
                 if (!anyActive)
                 {
                     int start = (int)_nullTimer.ElapsedMilliseconds;
@@ -235,11 +236,12 @@ namespace SharpClock
 
                     Current = modules[currentModuleNumber];
 
-                    if (nextModule || !Current.IsRunning || !Current.Visible)
+                    if (nextModule || !Current.IsRunning || !Current.Visible || (Current.ExcludeFromQueue && !_manualNext))
                     {
                         nextModule = false;
                         continue;
                     }
+                    _manualNext = false;
                     var timer = Stopwatch.StartNew();
                     while (Pause || timer.ElapsedMilliseconds < Current.Timer)
                     {
@@ -267,7 +269,7 @@ namespace SharpClock
                         var currentBuffer = Screen.GetBuffer();
 
                         int nextModuleNr = currentModuleNumber + 1 >= modules.Count ? 0 : currentModuleNumber + 1;
-                        while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible)
+                        while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible || modules[nextModuleNr].ExcludeFromQueue)
                             nextModuleNr = nextModuleNr >= modules.Count - 1 ? 0 : nextModuleNr + 1;
 
                         Screen.Clear();
@@ -293,6 +295,7 @@ namespace SharpClock
         }
         public void NextModule()
         {
+            _manualNext = true;
             nextModule = true;
             while (nextModule) Thread.Sleep(10);
         }

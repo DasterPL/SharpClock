@@ -25,8 +25,9 @@ namespace SharpClock
         public string Name { get => GetType().Name; }
         public string Icon { get; set; } = "view_module";
         protected IStorage Storage { get; private set; }
-        public bool Visible { get; set; } = true;
-        public int Timer { get; set; } = 10000;
+        public bool Visible          { get; set; } = true;
+        public bool ExcludeFromQueue { get; set; } = false;
+        public int  Timer            { get; set; } = 10000;
         protected int Tickrate { get; set; } = 1000;
         public bool IsRunning { get; private set; } = false;
         CancellationTokenSource tokenSource;
@@ -41,7 +42,10 @@ namespace SharpClock
                 .Add(nameof(Visible), () => Visible, v => Visible = v)
                     .Label("pl", "Widoczny").Label("en", "Visible")
                 .Add(nameof(Timer), () => Timer, v => Timer = v)
-                    .Label("pl", "Czas wyświetlania").Label("en", "Display time");
+                    .Label("pl", "Czas wyświetlania").Label("en", "Display time")
+                .Add(nameof(ExcludeFromQueue), () => ExcludeFromQueue, v => ExcludeFromQueue = v)
+                    .Label("pl", "Wyklucz z kolejki").Label("en", "Exclude from queue")
+                    .When(() => false);
         }
 
         public virtual System.Collections.Generic.IDictionary<string, object> GetState() => null;

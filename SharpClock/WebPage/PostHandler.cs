@@ -313,10 +313,11 @@ namespace SharpClock
             foreach (var module in PixelRenderer.Pixel.GetModules)
             {
                 dynamic m = new JObject();
-                m.Name = module.Name;
-                m.Status = module.IsRunning ? "started" : "stopped";
-                m.Icon = module.Icon;
-                m.Dll = Path.GetFileNameWithoutExtension(module.GetType().Assembly.Location);
+                m.Name             = module.Name;
+                m.Status           = module.IsRunning ? "started" : "stopped";
+                m.Icon             = module.Icon;
+                m.Dll              = Path.GetFileNameWithoutExtension(module.GetType().Assembly.Location);
+                m.ExcludeFromQueue = module.ExcludeFromQueue;
                 JArray v = new JArray();
                 foreach (var entry in module.Settings.All)
                 {
@@ -485,6 +486,9 @@ namespace SharpClock
                 if (power && !module.IsRunning) module.Start(Program.UpTime);
                 else if (!power && module.IsRunning) module.Stop();
             }
+
+            if (bool.TryParse(q["ExcludeFromQueue"], out bool exq))
+                module.ExcludeFromQueue = exq;
 
             foreach (var entry in module.Settings.All)
             {

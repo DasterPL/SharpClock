@@ -98,6 +98,14 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
     } finally { setLoading(false) }
   }
 
+  async function toggleExcludeFromQueue() {
+    setLoading(true)
+    try {
+      await patch(`/modules/${module.Name}`, { ExcludeFromQueue: String(!module.ExcludeFromQueue) })
+      await onRefreshValues(module.Name)
+    } finally { setLoading(false) }
+  }
+
   return (
     <Accordion.Item
       value={module.Name}
@@ -149,6 +157,15 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
           <TimerControls module={module} setLoading={setLoading} onRefresh={onRefreshValues} onPauseChange={onPauseChange} />
 
           <HStack justify="flex-end" gap={2}>
+            <Button
+              size="sm"
+              colorPalette={module.ExcludeFromQueue ? 'orange' : 'gray'}
+              variant={module.ExcludeFromQueue ? 'solid' : 'outline'}
+              onClick={toggleExcludeFromQueue}
+              title="Exclude from auto-rotation"
+            >
+              <i className="material-icons">remove_from_queue</i>
+            </Button>
             <Button size="sm" colorPalette="yellow" onClick={reload}>
               <i className="material-icons">refresh</i>
             </Button>
@@ -177,7 +194,7 @@ export default function ModuleList({ modules, setModules, setLoading, onPauseCha
       const res = await get('/modules')
       const updated = (res.Response ?? []).find(m => m.Name === name)
       if (updated)
-        setModules(prev => prev.map(m => m.Name === name ? { ...m, Values: updated.Values, Extra: updated.Extra } : m))
+        setModules(prev => prev.map(m => m.Name === name ? { ...m, Values: updated.Values, Extra: updated.Extra, ExcludeFromQueue: updated.ExcludeFromQueue } : m))
     } catch {}
   }
 
