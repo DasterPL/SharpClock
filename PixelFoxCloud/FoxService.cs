@@ -9,8 +9,11 @@ namespace PixelFoxCloud
 
         public float PvPower    { get; private set; }
         public float TodayYield { get; private set; }
-        public bool  HasData    { get; private set; }
-        public bool  ShouldShow { get; private set; }
+        public bool  HasData    => _hasData    && IsRunning;
+        public bool  ShouldShow => _shouldShow && IsRunning;
+
+        bool _hasData;
+        bool _shouldShow;
 
         const int ZeroHideThreshold = 3;
         int _zeroPowerCount;
@@ -25,11 +28,11 @@ namespace PixelFoxCloud
             if (hour < 5 || hour >= 21)
             {
                 _zeroPowerCount = 0;
-                ShouldShow = false;
+                _shouldShow = false;
                 return;
             }
 
-            string apiKey  = FoxConfig.Instance.ApiKey;
+            string apiKey   = FoxConfig.Instance.ApiKey;
             string deviceSN = FoxConfig.Instance.DeviceSN;
 
             if (string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deviceSN))
@@ -38,10 +41,10 @@ namespace PixelFoxCloud
             var data = new FoxEssClient(apiKey, deviceSN).Fetch();
             PvPower    = data.PvPower;
             TodayYield = data.TodayYield;
-            HasData    = true;
+            _hasData   = true;
 
-            if (PvPower > 0.01f) { _zeroPowerCount = 0; ShouldShow = true; }
-            else if (++_zeroPowerCount >= ZeroHideThreshold) ShouldShow = false;
+            if (PvPower > 0.01f) { _zeroPowerCount = 0; _shouldShow = true; }
+            else if (++_zeroPowerCount >= ZeroHideThreshold) _shouldShow = false;
         }
     }
 }

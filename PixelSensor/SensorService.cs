@@ -10,7 +10,7 @@ namespace PixelSensor
         public float RawTemperature { get; private set; }
         public float RawHumidity    { get; private set; }
         public float RawPressure    { get; private set; }
-        public bool  HasError => LastError != null;
+        public bool  HasError => !IsRunning || LastError != null;
 
         readonly BME280 _sensor;
         protected override int IntervalMs => 10_000;
