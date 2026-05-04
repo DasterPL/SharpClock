@@ -58,6 +58,7 @@ namespace SharpClock
 
         void RunInternal()
         {
+            if (!IsRunning) return;
             LastRun = DateTime.Now;
             try
             {
