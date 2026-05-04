@@ -3,7 +3,7 @@ using SharpClock;
 
 namespace PixelFoxCloud
 {
-    class FoxService : PixelService
+    public class FoxService : PixelService
     {
         public static readonly FoxService Instance = new FoxService();
 

@@ -3,7 +3,7 @@ using SharpClock;
 
 namespace PixelSensor
 {
-    class SensorService : PixelService
+    public class SensorService : PixelService
     {
         public static readonly SensorService Instance = new SensorService();
 

@@ -3,12 +3,12 @@ using SharpClock;
 
 namespace PixelWeather
 {
-    class WeatherService : PixelService
+    public class WeatherService : PixelService
     {
         public static readonly WeatherService Instance = new WeatherService();
 
-        public readonly Weather Weather = new Weather();
-        public readonly AirData AirData = new AirData();
+        internal readonly Weather Weather = new Weather();
+        internal readonly AirData AirData = new AirData();
 
         protected override int IntervalMs => 10 * 60 * 1000;
 
