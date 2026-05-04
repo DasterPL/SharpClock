@@ -7,6 +7,7 @@ import GlobalSettings from './GlobalSettings.jsx'
 import OptionsCard from './Options.jsx'
 import LogViewer from './LogViewer.jsx'
 import ScreenPreview from './ScreenPreview.jsx'
+import ServiceList from './ServiceList.jsx'
 
 function Loader({ visible }) {
   return (
@@ -90,6 +91,15 @@ export default function App() {
             </Card.Body>
           </Card.Root>
         )}
+
+        <Card.Root>
+          <Card.Header>
+            <Heading size="md">Services</Heading>
+          </Card.Header>
+          <Card.Body>
+            <ServiceList />
+          </Card.Body>
+        </Card.Root>
 
         <OptionsCard properties={properties} dlls={dlls} setDlls={setDlls} setLoading={setLoading} />
 

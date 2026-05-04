@@ -101,6 +101,18 @@ namespace SharpClock
                     Logger.Log(ConsoleColor.Green, $"[GlobalSettings] Loaded: {gs.Name}");
                 }
 
+                int prevServiceCount = PixelService.All.Count;
+                foreach (Type type in dll.GetExportedTypes())
+                {
+                    if (!typeof(PixelService).IsAssignableFrom(type) || type.IsAbstract) continue;
+                    System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+                }
+                for (int i = prevServiceCount; i < PixelService.All.Count; i++)
+                {
+                    PixelService.All[i].Start();
+                    Logger.Log(ConsoleColor.Green, $"[Service] Started: {PixelService.All[i].Name}");
+                }
+
                 foreach (Type type in dll.GetExportedTypes())
                 {
                     if (!typeof(PixelModule).IsAssignableFrom(type) || type.IsAbstract) continue;
@@ -317,6 +329,7 @@ namespace SharpClock
         }
         public void UnloadModule(string dllFileName)
         {
+            PixelService.UnloadFrom(dllFileName);
             var toRemove = modules
                 .Where(m => Path.GetFileName(m.GetType().Assembly.Location) == dllFileName)
                 .ToList();

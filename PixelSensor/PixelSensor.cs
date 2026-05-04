@@ -25,8 +25,8 @@ namespace PixelSensor
         public override void Draw(Stopwatch sw)
         {
             Screen.SetText("C*", Color.Green, 1);
-            float t = SensorService.RawTemperature + TemperatureOffset;
-            Screen.SetText(SensorService.HasError ? "---" : t.ToString("#.#"), Color.DarkRed, 10);
+            float t = SensorService.Instance.RawTemperature + TemperatureOffset;
+            Screen.SetText(SensorService.Instance.HasError ? "---" : t.ToString("#.#"), Color.DarkRed, 10);
         }
     }
 
@@ -42,8 +42,8 @@ namespace PixelSensor
         public override void Draw(Stopwatch sw)
         {
             Screen.SetImage(_icon, 0);
-            if (SensorService.HasError) { Screen.SetText("---", Color.DarkRed, 9); return; }
-            Screen.SetText(((int)Math.Round(SensorService.RawHumidity)) + "%", Color.Cyan, 9);
+            if (SensorService.Instance.HasError) { Screen.SetText("---", Color.DarkRed, 9); return; }
+            Screen.SetText(((int)Math.Round(SensorService.Instance.RawHumidity)) + "%", Color.Cyan, 9);
         }
     }
 
@@ -73,10 +73,10 @@ namespace PixelSensor
 
         public override void Draw(Stopwatch sw)
         {
-            if (SensorService.HasError) { Screen.SetText("---", Color.DarkRed, 0); return; }
-            float p = SensorService.RawPressure;
+            if (SensorService.Instance.HasError) { Screen.SetText("---", Color.DarkRed, 0); return; }
+            float p = SensorService.Instance.RawPressure;
             if (PressureDisplay == PressureMode.SeaLevel && Altitude > 0)
-                p = (float)(p * Math.Exp(Altitude / (29.3 * (273.15 + SensorService.RawTemperature))));
+                p = (float)(p * Math.Exp(Altitude / (29.3 * (273.15 + SensorService.Instance.RawTemperature))));
             int pos = Screen.SetText(((int)p).ToString(), Color.Orange, 0);
             Screen.SetText("hPa", Color.DarkOrange, pos, 0);
         }

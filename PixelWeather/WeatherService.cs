@@ -1,25 +1,20 @@
-using System;
 using System.Net;
-using System.Threading.Tasks;
-using System.Timers;
+using SharpClock;
 
 namespace PixelWeather
 {
-    static class WeatherService
+    class WeatherService : PixelService
     {
-        public static readonly Weather Weather = new Weather();
-        public static readonly AirData AirData = new AirData();
+        public static readonly WeatherService Instance = new WeatherService();
 
-        static readonly Timer _timer = new Timer(10 * 60 * 1000) { AutoReset = true };
+        public readonly Weather Weather = new Weather();
+        public readonly AirData AirData = new AirData();
 
-        static WeatherService()
-        {
-            _timer.Elapsed += (s, e) => Task.Run((Action)Fetch);
-            _timer.Start();
-            Task.Run((Action)Fetch);
-        }
+        protected override int IntervalMs => 10 * 60 * 1000;
 
-        static void Fetch()
+        WeatherService() { }
+
+        protected override void Run()
         {
             var cfg = WeatherConfig.Instance;
             Weather.Fetch(cfg.BuildUrl());

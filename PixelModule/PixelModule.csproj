@@ -52,6 +52,7 @@
     <Compile Include="Logger.cs" />
     <Compile Include="PixelGlobalSettings.cs" />
     <Compile Include="PixelModule.cs" />
+    <Compile Include="PixelService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

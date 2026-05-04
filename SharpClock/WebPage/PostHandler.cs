@@ -33,6 +33,20 @@ namespace SharpClock
 
         JToken HandleRequest(string method, string path, NameValueCollection q)
         {
+            // GET /services
+            if (method == "GET" && path == "/services")
+            {
+                return new JArray(PixelService.All.Select(s =>
+                {
+                    dynamic j = new JObject();
+                    j.Name      = s.Name;
+                    j.IsRunning = s.IsRunning;
+                    j.LastRun   = s.LastRun == DateTime.MinValue ? null : s.LastRun.ToString("o");
+                    j.LastError = s.LastError;
+                    return (JToken)j;
+                }).ToArray());
+            }
+
             // GET /modules
             if (method == "GET" && path == "/modules")
                 return GetModules();
