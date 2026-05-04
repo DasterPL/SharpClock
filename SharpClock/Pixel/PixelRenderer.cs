@@ -269,7 +269,7 @@ namespace SharpClock
                         var currentBuffer = Screen.GetBuffer();
 
                         int nextModuleNr = currentModuleNumber + 1 >= modules.Count ? 0 : currentModuleNumber + 1;
-                        while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible || modules[nextModuleNr].ExcludeFromQueue)
+                        while (!modules[nextModuleNr].IsRunning || !modules[nextModuleNr].Visible || (modules[nextModuleNr].ExcludeFromQueue && !_manualNext))
                             nextModuleNr = nextModuleNr >= modules.Count - 1 ? 0 : nextModuleNr + 1;
 
                         Screen.Clear();
