@@ -29,6 +29,7 @@ namespace SharpClock
 
         internal void Start()
         {
+            if (IsRunning) return;
             IsRunning = true;
             _timer = new Timer(IntervalMs) { AutoReset = true };
             _timer.Elapsed += (s, e) => Task.Run((Action)RunInternal);

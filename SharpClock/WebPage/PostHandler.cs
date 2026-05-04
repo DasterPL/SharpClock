@@ -47,6 +47,25 @@ namespace SharpClock
                 }).ToArray());
             }
 
+            // PATCH /services/{name}
+            if (method == "PATCH" && path.StartsWith("/services/"))
+            {
+                string svcName = path.Substring("/services/".Length);
+                var svc = PixelService.All.FirstOrDefault(s => s.Name == svcName);
+                if (svc == null) return Err("Service not found");
+                if (bool.TryParse(q["Power"], out bool power))
+                {
+                    if (power && !svc.IsRunning) svc.Start();
+                    else if (!power && svc.IsRunning) svc.Stop();
+                }
+                dynamic r = new JObject();
+                r.Name      = svc.Name;
+                r.IsRunning = svc.IsRunning;
+                r.LastRun   = svc.LastRun == DateTime.MinValue ? null : svc.LastRun.ToString("o");
+                r.LastError = svc.LastError;
+                return r;
+            }
+
             // GET /modules
             if (method == "GET" && path == "/modules")
                 return GetModules();
