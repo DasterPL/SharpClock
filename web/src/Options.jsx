@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import {
   Accordion, Box, Button, Card, Flex, HStack,
   Heading, List, Slider, Stack, Text,
@@ -58,9 +58,8 @@ function BrightnessSlider({ initValue, setLoading }) {
   )
 }
 
-function Properties({ properties, setLoading }) {
-  const [paused, setPaused] = useState(properties?.Pause ?? false)
-  useEffect(() => setPaused(properties?.Pause ?? false), [properties?.Pause])
+function Properties({ properties, setLoading, onPauseChange }) {
+  const paused = properties?.Pause ?? false
   const [animated, setAnimated] = useState(properties.AnimatedSwitching)
   const displayBrightness = mapValue(properties.Brightness, 2, 32, 0, 100)
 
@@ -68,7 +67,7 @@ function Properties({ properties, setLoading }) {
     setLoading(true)
     try {
       const res = await post('/modules/pause')
-      setPaused(res.Response?.Pause ?? false)
+      onPauseChange?.(res.Response?.Pause ?? false)
     } finally { setLoading(false) }
   }
 
@@ -199,7 +198,7 @@ function AppInstaller({ dlls, setDlls, setLoading }) {
   )
 }
 
-export default function OptionsCard({ properties, dlls, setDlls, setLoading }) {
+export default function OptionsCard({ properties, dlls, setDlls, setLoading, onPauseChange }) {
   return (
     <Card.Root>
       <Card.Header>
@@ -211,7 +210,7 @@ export default function OptionsCard({ properties, dlls, setDlls, setLoading }) {
             <AppInstaller dlls={dlls} setDlls={setDlls} setLoading={setLoading} />
           </Section>
           <Section icon="settings_applications" title="Properties">
-            {properties && <Properties properties={properties} setLoading={setLoading} />}
+            {properties && <Properties properties={properties} setLoading={setLoading} onPauseChange={onPauseChange} />}
           </Section>
           <Section icon="wifi" title="WiFi">
             <WifiPanel setLoading={setLoading} />

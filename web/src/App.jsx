@@ -101,7 +101,8 @@ export default function App() {
           </Card.Body>
         </Card.Root>
 
-        <OptionsCard properties={properties} dlls={dlls} setDlls={setDlls} setLoading={setLoading} />
+        <OptionsCard properties={properties} dlls={dlls} setDlls={setDlls} setLoading={setLoading}
+          onPauseChange={p => setProperties(prev => ({ ...prev, Pause: p }))} />
 
         <LogViewer setLoading={setLoading} />
       </Stack>
