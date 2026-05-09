@@ -71,17 +71,33 @@ function Properties({ properties, setLoading, onPauseChange }) {
     } finally { setLoading(false) }
   }
 
-  async function toggleAnimated() {
+  async function toggleAnimated(e) {
     setLoading(true)
     try {
-      await patch('/properties', { AnimatedSwitching: String(!animated) })
-      setAnimated(a => !a)
+      await patch('/properties', { AnimatedSwitching: String(e.checked) })
+      setAnimated(e.checked)
     } finally { setLoading(false) }
   }
 
   return (
     <Stack gap={3}>
       <BrightnessSlider initValue={displayBrightness} setLoading={setLoading} />
+
+      <Flex align="center" justify="space-between" px={1}>
+        <Text fontSize="sm">Module auto switch</Text>
+        <Switch.Root checked={!paused} onCheckedChange={togglePause} colorPalette="green">
+          <Switch.HiddenInput />
+          <Switch.Control><Switch.Thumb /></Switch.Control>
+        </Switch.Root>
+      </Flex>
+
+      <Flex align="center" justify="space-between" px={1}>
+        <Text fontSize="sm">Animated switching</Text>
+        <Switch.Root checked={animated} onCheckedChange={toggleAnimated} colorPalette="teal">
+          <Switch.HiddenInput />
+          <Switch.Control><Switch.Thumb /></Switch.Control>
+        </Switch.Root>
+      </Flex>
 
       <HStack gap={2}>
         <Button flex={1} colorPalette="blue" onClick={() => post('/modules/prev')}>
@@ -93,26 +109,6 @@ function Properties({ properties, setLoading, onPauseChange }) {
           <i className="material-icons">navigate_next</i>
         </Button>
       </HStack>
-
-      <Flex align="center" justify="space-between" px={1}>
-        <Text fontSize="sm">Module auto switch</Text>
-        <Switch.Root
-          checked={!paused}
-          onCheckedChange={togglePause}
-          colorPalette="green"
-        >
-          <Switch.HiddenInput />
-          <Switch.Control><Switch.Thumb /></Switch.Control>
-        </Switch.Root>
-      </Flex>
-
-      <Button
-        colorPalette={animated ? 'teal' : 'gray'}
-        onClick={toggleAnimated}
-      >
-        Animated switching
-        <i className="material-icons">{animated ? 'animation' : 'swap_horiz'}</i>
-      </Button>
 
       <HStack gap={2}>
         <Button flex={1} colorPalette="gray" onClick={() => post('/system/shutdown', { hard: 'false' })}>
