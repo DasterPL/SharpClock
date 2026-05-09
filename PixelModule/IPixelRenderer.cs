@@ -14,6 +14,7 @@ namespace SharpClock
         void LoadModule(string absolutePath);
         void UnloadModule(string dllFileName);
         void NextModule();
+        void PrevModule();
         void Reload();
         void Start();
         void Stop();

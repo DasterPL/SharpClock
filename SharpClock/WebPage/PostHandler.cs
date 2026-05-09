@@ -89,6 +89,13 @@ namespace SharpClock
                 return Ok(PixelRenderer.Pixel.Current.Name);
             }
 
+            // POST /modules/prev
+            if (method == "POST" && path == "/modules/prev")
+            {
+                PixelRenderer.Pixel.PrevModule();
+                return Ok(PixelRenderer.Pixel.Current.Name);
+            }
+
             // POST /modules/switch
             if (method == "POST" && path == "/modules/switch")
             {

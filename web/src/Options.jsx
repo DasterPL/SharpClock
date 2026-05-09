@@ -83,10 +83,16 @@ function Properties({ properties, setLoading, onPauseChange }) {
     <Stack gap={3}>
       <BrightnessSlider initValue={displayBrightness} setLoading={setLoading} />
 
-      <Button colorPalette="blue" onClick={() => post('/modules/next')}>
-        Next Module
-        <i className="material-icons">navigate_next</i>
-      </Button>
+      <HStack gap={2}>
+        <Button flex={1} colorPalette="blue" onClick={() => post('/modules/prev')}>
+          <i className="material-icons">navigate_before</i>
+          Prev
+        </Button>
+        <Button flex={1} colorPalette="blue" onClick={() => post('/modules/next')}>
+          Next
+          <i className="material-icons">navigate_next</i>
+        </Button>
+      </HStack>
 
       <Flex align="center" justify="space-between" px={1}>
         <Text fontSize="sm">Module auto switch</Text>

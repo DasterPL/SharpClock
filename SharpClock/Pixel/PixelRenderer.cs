@@ -311,6 +311,21 @@ namespace SharpClock
             nextModule = true;
             while (nextModule) Thread.Sleep(10);
         }
+        public void PrevModule()
+        {
+            int count = modules.Count;
+            int start = modules.IndexOf(Current);
+            for (int i = 1; i < count; i++)
+            {
+                int idx = (start - i + count) % count;
+                if (modules[idx].IsRunning && modules[idx].Visible)
+                {
+                    currentModuleNumber = idx - 1;
+                    NextModule();
+                    return;
+                }
+            }
+        }
         public bool SwitchModule(PixelModule module, bool forcePause = false)
         {
             if (!module.IsRunning)
