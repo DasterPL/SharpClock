@@ -28,7 +28,7 @@ function DragHandle({ onDragStart, onTouchStart }) {
   )
 }
 
-function TimerControls({ module, setLoading, onRefresh, onPauseChange }) {
+function TimerControls({ module, setLoading, onRefresh, onPropertiesChange }) {
   const extra = module.Extra
   if (!extra) return null
   const running = extra.running
@@ -41,7 +41,7 @@ function TimerControls({ module, setLoading, onRefresh, onPauseChange }) {
       await postButton(module.Name, id)
       await onRefresh(module.Name)
       if (id === 'User1' && !wasRunning)
-        onPauseChange?.(true)
+        onPropertiesChange?.({ Pause: true })
     } finally { setLoading(false) }
   }
 
@@ -63,8 +63,9 @@ function TimerControls({ module, setLoading, onRefresh, onPauseChange }) {
   )
 }
 
-function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading, onDragStart, onTouchStart, onDragOver, onDrop, onPauseChange }) {
-  const running = module.Status === 'started'
+function ModuleItem({ module, index, properties, onStatusChange, onRefreshValues, setLoading, onDragStart, onTouchStart, onDragOver, onDrop, onPropertiesChange }) {
+  const running  = module.Status === 'started'
+  const isPinned = properties?.Pause && properties?.Current === module.Name
 
   async function savePower(checked) {
     setLoading(true)
@@ -89,12 +90,17 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
     finally { setLoading(false) }
   }
 
-  async function switchTo() {
+  async function togglePin(checked) {
     setLoading(true)
     try {
-      const res = await post('/modules/switch', { name: module.Name, pause: 'true' })
-      if (res.Response?.Error) alert('Module is disabled!')
-      else onPauseChange?.(res.Response?.Pause ?? true)
+      if (checked) {
+        const res = await post('/modules/switch', { name: module.Name, pause: 'true' })
+        if (res.Response?.Error) return
+        onPropertiesChange?.({ Pause: res.Response?.Pause ?? true, Current: res.Response?.Current })
+      } else {
+        const res = await patch('/properties', { Pause: 'false' })
+        onPropertiesChange?.({ Pause: res.Response?.Pause ?? false, Current: res.Response?.Current })
+      }
     } finally { setLoading(false) }
   }
 
@@ -154,9 +160,9 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
             </Box>
           ))}
 
-          <TimerControls module={module} setLoading={setLoading} onRefresh={onRefreshValues} onPauseChange={onPauseChange} />
+          <TimerControls module={module} setLoading={setLoading} onRefresh={onRefreshValues} onPropertiesChange={onPropertiesChange} />
 
-          <HStack justify="flex-end" gap={2}>
+          <HStack justify="flex-end" gap={2} align="center">
             <Button
               size="sm"
               colorPalette={module.ExcludeFromQueue ? 'orange' : 'gray'}
@@ -169,9 +175,15 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
             <Button size="sm" colorPalette="yellow" onClick={reload}>
               <i className="material-icons">refresh</i>
             </Button>
-            <Button size="sm" colorPalette="green" onClick={switchTo}>
-              <i className="material-icons">visibility</i>
-            </Button>
+            <Switch.Root
+              checked={isPinned}
+              onCheckedChange={e => togglePin(e.checked)}
+              colorPalette="blue"
+              flexShrink={0}
+            >
+              <Switch.HiddenInput />
+              <Switch.Control><Switch.Thumb /></Switch.Control>
+            </Switch.Root>
           </HStack>
         </Stack>
       </Accordion.ItemContent>
@@ -179,7 +191,7 @@ function ModuleItem({ module, index, onStatusChange, onRefreshValues, setLoading
   )
 }
 
-export default function ModuleList({ modules, setModules, setLoading, onPauseChange }) {
+export default function ModuleList({ modules, setModules, setLoading, properties, onPropertiesChange }) {
   const [openItems, setOpenItems] = useState([])
   const dragFrom = useRef(null)
 
@@ -259,6 +271,7 @@ export default function ModuleList({ modules, setModules, setLoading, onPauseCha
           key={m.Name}
           module={m}
           index={i}
+          properties={properties}
           onStatusChange={updateStatus}
           onRefreshValues={refreshModuleValues}
           setLoading={setLoading}
@@ -266,7 +279,7 @@ export default function ModuleList({ modules, setModules, setLoading, onPauseCha
           onTouchStart={(e) => handleTouchStart(i, e)}
           onDragOver={handleDragOver}
           onDrop={() => handleDrop(i)}
-          onPauseChange={onPauseChange}
+          onPropertiesChange={onPropertiesChange}
         />
       ))}
     </Accordion.Root>

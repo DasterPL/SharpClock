@@ -77,7 +77,8 @@ export default function App() {
           </Card.Header>
           <Card.Body>
             <ModuleList modules={modules} setModules={setModules} setLoading={setLoading}
-              onPauseChange={p => setProperties(prev => ({ ...prev, Pause: p }))} />
+              properties={properties}
+              onPropertiesChange={p => setProperties(prev => ({ ...prev, ...p }))} />
           </Card.Body>
         </Card.Root>
 

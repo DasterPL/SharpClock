@@ -92,11 +92,13 @@ namespace SharpClock
             // POST /modules/switch
             if (method == "POST" && path == "/modules/switch")
             {
-                dynamic r = new JObject();
-                r.Pause = PixelRenderer.Pixel.Pause;
-                r.Error = !PixelRenderer.Pixel.SwitchModule(
+                bool error = !PixelRenderer.Pixel.SwitchModule(
                     PixelRenderer.Pixel.GetModule(q["name"]),
                     bool.TryParse(q["pause"], out bool sp) && sp);
+                dynamic r = new JObject();
+                r.Pause   = PixelRenderer.Pixel.Pause;
+                r.Current = PixelRenderer.Pixel.Current?.Name;
+                r.Error   = error;
                 return r;
             }
 
@@ -152,6 +154,8 @@ namespace SharpClock
                     PixelRenderer.Pixel.AnimatedSwitching = anim;
                     Config.AnimatedSwitching = anim;
                 }
+                if (bool.TryParse(q["Pause"], out bool pause))
+                    PixelRenderer.Pixel.Pause = pause;
                 return BuildProperties();
             }
 
@@ -336,6 +340,7 @@ namespace SharpClock
             dynamic r = new JObject();
             r.Brightness = PixelDraw.Screen.Brightness;
             r.Pause = PixelRenderer.Pixel.Pause;
+            r.Current = PixelRenderer.Pixel.Current?.Name;
             r.AnimatedSwitching = PixelRenderer.Pixel.AnimatedSwitching;
             return r;
         }
