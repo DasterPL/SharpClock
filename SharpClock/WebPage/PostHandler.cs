@@ -92,11 +92,12 @@ namespace SharpClock
             // POST /modules/switch
             if (method == "POST" && path == "/modules/switch")
             {
-                dynamic r = new JObject();
-                r.Pause = PixelRenderer.Pixel.Pause;
-                r.Error = !PixelRenderer.Pixel.SwitchModule(
+                bool error = !PixelRenderer.Pixel.SwitchModule(
                     PixelRenderer.Pixel.GetModule(q["name"]),
                     bool.TryParse(q["pause"], out bool sp) && sp);
+                dynamic r = new JObject();
+                r.Pause = PixelRenderer.Pixel.Pause;
+                r.Error = error;
                 return r;
             }
 
