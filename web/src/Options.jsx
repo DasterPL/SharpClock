@@ -3,6 +3,7 @@ import {
   Accordion, Box, Button, Card, Flex, HStack,
   Heading, List, Slider, Stack, Text,
 } from '@chakra-ui/react'
+import { Switch } from '@chakra-ui/react'
 import { post, patch, del, mapValue } from './api.js'
 import WifiPanel from './WifiPanel.jsx'
 
@@ -88,13 +89,17 @@ function Properties({ properties, setLoading }) {
         <i className="material-icons">navigate_next</i>
       </Button>
 
-      <Button
-        colorPalette={paused ? 'yellow' : 'green'}
-        onClick={togglePause}
-      >
-        Module auto switch
-        <i className="material-icons">{paused ? 'play_arrow' : 'pause'}</i>
-      </Button>
+      <Flex align="center" justify="space-between" px={1}>
+        <Text fontSize="sm">Module auto switch</Text>
+        <Switch.Root
+          checked={!paused}
+          onCheckedChange={togglePause}
+          colorPalette="green"
+        >
+          <Switch.HiddenInput />
+          <Switch.Control><Switch.Thumb /></Switch.Control>
+        </Switch.Root>
+      </Flex>
 
       <Button
         colorPalette={animated ? 'teal' : 'gray'}
