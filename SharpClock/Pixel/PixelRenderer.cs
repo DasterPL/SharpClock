@@ -24,7 +24,10 @@ namespace SharpClock
         public bool IsRunning { get; private set; } = false;
         public bool Pause { get; set; } = false;
         public bool AnimatedSwitching { get; set; } = false;
+        public bool RandomMode { get; set; } = false;
         public PixelModule[] GetModules { get => modules.ToArray(); }
+        readonly Random _rng = new Random();
+        bool _wasRandom = false;
 
         internal PixelRenderer(IPixelDraw Screen)
         {
@@ -188,6 +191,7 @@ namespace SharpClock
 
             Screen.Brightness = Config.Brightness;
             AnimatedSwitching = Config.AnimatedSwitching;
+            RandomMode = Config.RandomMode;
             Logger.Log(ConsoleColor.Cyan, "System Ready!");
             drawThread = new Thread(Render);
             LoadingAnimation.Stop();
@@ -239,6 +243,21 @@ namespace SharpClock
                     int elapsed = 33 - (int)(_nullTimer.ElapsedMilliseconds - start);
                     Thread.Sleep(elapsed > 0 ? elapsed : 0);
                     continue;
+                }
+
+                if (RandomMode)
+                {
+                    for (int i = modules.Count - 1; i > 0; i--)
+                    {
+                        int j = _rng.Next(i + 1);
+                        var tmp = modules[i]; modules[i] = modules[j]; modules[j] = tmp;
+                    }
+                    _wasRandom = true;
+                }
+                else if (_wasRandom)
+                {
+                    modules = modules.OrderBy(m => Array.IndexOf(moduleOrder, m.Name)).ToList();
+                    _wasRandom = false;
                 }
 
                 for (currentModuleNumber = 0; currentModuleNumber < modules.Count; currentModuleNumber++)

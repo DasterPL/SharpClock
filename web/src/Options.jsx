@@ -61,6 +61,7 @@ function BrightnessSlider({ initValue, setLoading }) {
 function Properties({ properties, setLoading, onPauseChange }) {
   const paused = properties?.Pause ?? false
   const [animated, setAnimated] = useState(properties.AnimatedSwitching)
+  const [random, setRandom] = useState(properties.RandomMode)
   const displayBrightness = mapValue(properties.Brightness, 2, 32, 0, 100)
 
   async function togglePause() {
@@ -79,6 +80,14 @@ function Properties({ properties, setLoading, onPauseChange }) {
     } finally { setLoading(false) }
   }
 
+  async function toggleRandom(e) {
+    setLoading(true)
+    try {
+      await patch('/properties', { RandomMode: String(e.checked) })
+      setRandom(e.checked)
+    } finally { setLoading(false) }
+  }
+
   return (
     <Stack gap={3}>
       <BrightnessSlider initValue={displayBrightness} setLoading={setLoading} />
@@ -94,6 +103,14 @@ function Properties({ properties, setLoading, onPauseChange }) {
       <Flex align="center" justify="space-between" px={1}>
         <Text fontSize="sm">Animated switching</Text>
         <Switch.Root checked={animated} onCheckedChange={toggleAnimated} colorPalette="teal">
+          <Switch.HiddenInput />
+          <Switch.Control><Switch.Thumb /></Switch.Control>
+        </Switch.Root>
+      </Flex>
+
+      <Flex align="center" justify="space-between" px={1}>
+        <Text fontSize="sm">Random mode</Text>
+        <Switch.Root checked={random} onCheckedChange={toggleRandom} colorPalette="purple">
           <Switch.HiddenInput />
           <Switch.Control><Switch.Thumb /></Switch.Control>
         </Switch.Root>

@@ -160,6 +160,11 @@ namespace SharpClock
                     PixelRenderer.Pixel.AnimatedSwitching = anim;
                     Config.AnimatedSwitching = anim;
                 }
+                if (bool.TryParse(q["RandomMode"], out bool rnd))
+                {
+                    PixelRenderer.Pixel.RandomMode = rnd;
+                    Config.RandomMode = rnd;
+                }
                 return BuildProperties();
             }
 
@@ -345,6 +350,7 @@ namespace SharpClock
             r.Brightness = PixelDraw.Screen.Brightness;
             r.Pause = PixelRenderer.Pixel.Pause;
             r.AnimatedSwitching = PixelRenderer.Pixel.AnimatedSwitching;
+            r.RandomMode = PixelRenderer.Pixel.RandomMode;
             return r;
         }
 

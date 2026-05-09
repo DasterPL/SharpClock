@@ -143,5 +143,11 @@ namespace SharpClock
             get => bool.Parse(Db.Orm.Table("properties").Where("key", "animated_switching").Scalar("value")?.ToString() ?? "False");
             set => Db.Orm.Table("properties").Upsert(("key", "animated_switching"), ("value", value.ToString()));
         }
+
+        public static bool RandomMode
+        {
+            get => bool.Parse(Db.Orm.Table("properties").Where("key", "random_mode").Scalar("value")?.ToString() ?? "False");
+            set => Db.Orm.Table("properties").Upsert(("key", "random_mode"), ("value", value.ToString()));
+        }
     }
 }
