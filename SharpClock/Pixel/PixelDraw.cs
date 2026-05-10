@@ -70,6 +70,21 @@ namespace SharpClock
         readonly int[] PixelHw;
         const int LedCount = 256;
         static readonly Color White = Color.FromArgb(255, 255, 255);
+        byte _brightness = 10;
+        readonly byte[] _gammaLut = new byte[256];
+
+        void UpdateLut()
+        {
+            float scale = _brightness / 255f;
+            _gammaLut[0] = 0;
+            for (int i = 1; i < 256; i++)
+            {
+                double v = 255 * Math.Pow(i / 255.0, 2.2) * scale;
+                _gammaLut[i] = (byte)Math.Max(1, Math.Round(v));
+            }
+        }
+
+        Color Gamma(Color c) => Color.FromArgb(_gammaLut[c.R], _gammaLut[c.G], _gammaLut[c.B]);
         internal PixelDraw()
         {
             if (Screen == null)
@@ -82,6 +97,8 @@ namespace SharpClock
             }
             neopixel = new ws281x.Net.Neopixel(ledCount: LedCount, pin: HardwareConfig.LedPin, stripType: rpi_ws281x.WS2811_STRIP_GRB, (uint)HardwareConfig.LedFreq, HardwareConfig.LedDma, false, 16, 0);
             neopixel.Begin();
+            neopixel.SetBrightness(255);
+            UpdateLut();
             PixelHw = new int[LedCount];
             for (int i = 0; i < LedCount; i++)
                 PixelHw[i] = Array.IndexOf(Pixels, i);
@@ -158,8 +175,8 @@ namespace SharpClock
         }
         public byte Brightness
         {
-            get => neopixel.GetBrightness();
-            set => neopixel.SetBrightness(value);
+            get => _brightness;
+            set { _brightness = value; UpdateLut(); }
         }
         public void Clear()
         {
@@ -169,11 +186,11 @@ namespace SharpClock
         public void SetPixel(int number, Color c)
         {
             if (number < 0 || number >= LedCount) return;
-            neopixel.SetPixelColor(PixelHw[number], c);
+            neopixel.SetPixelColor(PixelHw[number], Gamma(c));
         }
         public void SetPixel(Point point, Color c)
         {
-            neopixel.SetPixelColor(PixelHw[8 * point.X + point.Y], c);
+            neopixel.SetPixelColor(PixelHw[8 * point.X + point.Y], Gamma(c));
         }
         public int SetText(string text, Color c, int x = 0, int spaces = 1)
         {
