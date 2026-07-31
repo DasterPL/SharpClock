@@ -9,14 +9,16 @@ namespace MiniOrm
     {
         readonly IDbConnection _conn;
         readonly string _table;
+        readonly object _gate;
         readonly List<(string col, object val)> _where = new List<(string, object)>();
         string[] _columns;
         string _orderBy;
 
-        public TableQuery(IDbConnection conn, string table)
+        public TableQuery(IDbConnection conn, string table, object gate)
         {
             _conn  = conn;
             _table = table;
+            _gate  = gate ?? new object();
         }
 
         public TableQuery Columns(params string[] columns) { _columns = columns; return this; }
@@ -30,26 +32,29 @@ namespace MiniOrm
             string cols = _columns != null ? string.Join(", ", _columns) : "*";
             string sql  = $"SELECT {cols} FROM {_table}{WhereClause()}{OrderClause()}";
             var list = new List<T>();
-            using (var cmd = Build(sql, WhereParams()))
-            using (var reader = cmd.ExecuteReader())
-                while (reader.Read())
-                    list.Add(map(reader));
+            lock (_gate)
+                using (var cmd = Build(sql, WhereParams()))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                        list.Add(map(reader));
             return list;
         }
 
         public object Scalar(string expression)
         {
             string sql = $"SELECT {expression} FROM {_table}{WhereClause()}";
-            using (var cmd = Build(sql, WhereParams()))
-                return cmd.ExecuteScalar();
+            lock (_gate)
+                using (var cmd = Build(sql, WhereParams()))
+                    return cmd.ExecuteScalar();
         }
 
         public int Update(params (string col, object val)[] set)
         {
             string setClauses = string.Join(", ", set.Select(s => $"{s.col} = @s_{s.col}"));
             var parms = set.Select(s => ($"@s_{s.col}", s.val)).Concat(WhereParams());
-            using (var cmd = Build($"UPDATE {_table} SET {setClauses}{WhereClause()}", parms))
-                return cmd.ExecuteNonQuery();
+            lock (_gate)
+                using (var cmd = Build($"UPDATE {_table} SET {setClauses}{WhereClause()}", parms))
+                    return cmd.ExecuteNonQuery();
         }
 
         public int Upsert(params (string col, object val)[] values) =>
@@ -60,8 +65,9 @@ namespace MiniOrm
 
         public int Delete()
         {
-            using (var cmd = Build($"DELETE FROM {_table}{WhereClause()}", WhereParams()))
-                return cmd.ExecuteNonQuery();
+            lock (_gate)
+                using (var cmd = Build($"DELETE FROM {_table}{WhereClause()}", WhereParams()))
+                    return cmd.ExecuteNonQuery();
         }
 
         // ── Internals ────────────────────────────────────────────────────
@@ -70,10 +76,11 @@ namespace MiniOrm
         {
             string cols  = string.Join(", ", values.Select(v => v.col));
             string parms = string.Join(", ", values.Select(v => $"@{v.col}"));
-            using (var cmd = Build(
-                $"INSERT {conflict} INTO {_table} ({cols}) VALUES ({parms})",
-                values.Select(v => ($"@{v.col}", v.val))))
-                return cmd.ExecuteNonQuery();
+            lock (_gate)
+                using (var cmd = Build(
+                    $"INSERT {conflict} INTO {_table} ({cols}) VALUES ({parms})",
+                    values.Select(v => ($"@{v.col}", v.val))))
+                    return cmd.ExecuteNonQuery();
         }
 
         string WhereClause() => _where.Count == 0 ? "" :

@@ -56,7 +56,9 @@ export default function ScreenPreview() {
 
   useEffect(() => {
     if (live) {
-      intervalRef.current = setInterval(refresh, 500)
+      // 1 s, not 500 ms: each poll makes the Pi Zero snapshot the frame buffer and PNG-encode
+      // it, which competes with the render thread for the single core.
+      intervalRef.current = setInterval(refresh, 1000)
     } else {
       clearInterval(intervalRef.current)
     }

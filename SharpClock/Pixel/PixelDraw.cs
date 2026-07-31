@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace SharpClock
 {
@@ -20,9 +22,9 @@ namespace SharpClock
                     for (int j = LedCount - 1; j > 0; j--)
                     {
                         if (j % 8 == 0)
-                            neopixel.SetPixelColor(PixelHw[j], Color.Black);
+                            SetHw(PixelHw[j], Color.Black, j);
                         else
-                            neopixel.SetPixelColor(PixelHw[j], neopixel.LedList.GetColor(PixelHw[j - 1]));
+                            SetHw(PixelHw[j], _mirror[j - 1], j);
                     }
                 }
             }
@@ -33,9 +35,9 @@ namespace SharpClock
                     for (int j = 0; j < LedCount; j++)
                     {
                         if ((j - 7) % 8 == 0)
-                            neopixel.SetPixelColor(PixelHw[j], Color.Black);
-                        else
-                            neopixel.SetPixelColor(PixelHw[j], neopixel.LedList.GetColor(PixelHw[j + 1]));
+                            SetHw(PixelHw[j], Color.Black, j);
+                        else if (j + 1 < LedCount)
+                            SetHw(PixelHw[j], _mirror[j + 1], j);
                     }
                 }
             }
@@ -43,7 +45,7 @@ namespace SharpClock
         PixelFont Font = null;
 
         Dictionary<int, int[]> RomanFont = null;
-        Dictionary<char, char> unexceptedCharacters = new Dictionary<char, char>()
+        static readonly Dictionary<char, char> unexceptedCharacters = new Dictionary<char, char>()
         {
             { 'ą', 'a' },
             { 'ć', 'c' },
@@ -73,6 +75,12 @@ namespace SharpClock
         byte _brightness = 10;
         readonly byte[] _gammaLut = new byte[256];
 
+        // Managed mirror of what is currently on the strip, in logical order (8*x + y).
+        // Lets GetBuffer/GetScreen answer without 256 native reads, and lets Clear() skip
+        // pixels that are already black — a full clear used to cost 256 native calls a frame.
+        readonly Color[] _mirror = new Color[LedCount];
+        readonly bool[] _lit = new bool[LedCount]; // indexed logically, mirrors "is non-black"
+
         void UpdateLut()
         {
             float scale = _brightness / 255f;
@@ -85,6 +93,20 @@ namespace SharpClock
         }
 
         Color Gamma(Color c) => Color.FromArgb(_gammaLut[c.R], _gammaLut[c.G], _gammaLut[c.B]);
+
+        /// <summary>
+        /// Single funnel to the LED strip. `c` is the final on-wire colour (gamma already applied).
+        /// Skips the native call when a pixel is already black.
+        /// </summary>
+        void SetHw(int hw, Color c, int logical)
+        {
+            bool black = c.R == 0 && c.G == 0 && c.B == 0;
+            if (black && !_lit[logical]) return;
+            neopixel.SetPixelColor(hw, c);
+            _mirror[logical] = c;
+            _lit[logical] = !black;
+        }
+
         internal PixelDraw()
         {
             if (Screen == null)
@@ -102,21 +124,60 @@ namespace SharpClock
             PixelHw = new int[LedCount];
             for (int i = 0; i < LedCount; i++)
                 PixelHw[i] = Array.IndexOf(Pixels, i);
+            for (int i = 0; i < LedCount; i++)
+                _mirror[i] = Color.Black;
             LoadFont();
         }
+
+        /// <summary>
+        /// Reads a rectangle out of a bitmap as a column-major Color[] (index = x*height + y).
+        /// Uses LockBits rather than GetPixel: under Mono/libgdiplus GetPixel is a managed→native
+        /// round trip per pixel, and this runs for every icon on every frame at 30 fps.
+        /// </summary>
         Color[] LoadImage(Image image, Point point, int width = 8, int height = 8)
         {
-            var img = new List<Color>();
-            var bitmap = (Bitmap)image;
-            for (int x = point.X; x < point.X + width; x++)
+            var bitmap = image as Bitmap;
+            if (bitmap == null)
+                throw new ArgumentException("LoadImage expects a Bitmap", nameof(image));
+
+            var result = new Color[width * height];
+            var rect = new Rectangle(point.X, point.Y, width, height);
+            BitmapData data = null;
+            try
             {
-                for (int y = point.Y; y < point.Y + height; y++)
-                {
-                    img.Add(bitmap.GetPixel(x, y));
-                }
+                data = bitmap.LockBits(rect, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                int stride = data.Stride;
+                var buf = new byte[Math.Abs(stride) * height];
+                Marshal.Copy(data.Scan0, buf, 0, buf.Length);
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                    {
+                        int o = y * stride + x * 4; // BGRA little-endian
+                        result[x * height + y] = Color.FromArgb(buf[o + 3], buf[o + 2], buf[o + 1], buf[o]);
+                    }
+                return result;
             }
-            return img.ToArray();
+            catch (Exception e)
+            {
+                // Older libgdiplus builds can refuse format-converting LockBits on some
+                // indexed sources. Correctness first: fall back to the slow per-pixel path.
+                if (!_lockBitsWarned)
+                {
+                    _lockBitsWarned = true;
+                    Logger.Log(ConsoleColor.DarkYellow, $"[PixelDraw] LockBits unavailable, using GetPixel fallback: {e.Message}");
+                }
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        result[x * height + y] = bitmap.GetPixel(point.X + x, point.Y + y);
+                return result;
+            }
+            finally
+            {
+                if (data != null) { try { bitmap.UnlockBits(data); } catch { } }
+            }
         }
+        bool _lockBitsWarned;
+
         static readonly char[] FontChars =
             ("0123456789.,;:$#'!\"/?%()@*-=~+[]<>_^& " +
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -139,7 +200,7 @@ namespace SharpClock
                     var pixels = LoadImage(image, new Point(cursorX, 0), Font[i].Size);
                     cursorX += Font[i].Size + 1;
                     Font[i].Points = Enumerable.Range(0, pixels.Length)
-                        .Where(idx => pixels[idx] == White)
+                        .Where(idx => pixels[idx].ToArgb() == White.ToArgb())
                         .ToArray();
                 }
             }
@@ -148,29 +209,47 @@ namespace SharpClock
         void LoadRomanFont(string file = "img/RomanNumbers.png")
         {
             Logger.Log(ConsoleColor.Cyan, "Loading Roman Font img from file");
-            RomanFont = new Dictionary<int, int[]>();
-            Image image = Image.FromFile(file);
-            var chars = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-
-            for (int i = 0; i < chars.Length; i++)
+            var roman = new Dictionary<int, int[]>();
+            using (Image image = Image.FromFile(file))
             {
-                var Letter = LoadImage(image, new Point(i * 9, 0), 9);
-                var points = new List<int>();
-                for (int i1 = 0; i1 < Letter.Length; i1++)
+                var chars = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+                for (int i = 0; i < chars.Length; i++)
                 {
-                    if (Letter[i1] == White)
-                        points.Add(i1);
+                    var Letter = LoadImage(image, new Point(i * 9, 0), 9);
+                    var points = new List<int>();
+                    for (int i1 = 0; i1 < Letter.Length; i1++)
+                        if (Letter[i1].ToArgb() == White.ToArgb())
+                            points.Add(i1);
+                    roman.Add(chars[i], points.ToArray());
                 }
-                RomanFont.Add(chars[i], points.ToArray());
             }
+            RomanFont = roman; // published only once fully built
         }
         public Image GetScreen()
         {
             var buffer = GetBuffer();
-            Bitmap tmp = new Bitmap(32, 8);
-            for (int x = 0; x < 32; x++)
-                for (int y = 0; y < 8; y++)
-                    tmp.SetPixel(x, y, buffer[8 * x + y]);
+            var tmp = new Bitmap(32, 8, PixelFormat.Format32bppArgb);
+            var data = tmp.LockBits(new Rectangle(0, 0, 32, 8), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                var buf = new byte[Math.Abs(data.Stride) * 8];
+                for (int x = 0; x < 32; x++)
+                    for (int y = 0; y < 8; y++)
+                    {
+                        Color c = buffer[8 * x + y];
+                        int o = y * data.Stride + x * 4;
+                        buf[o + 0] = c.B;
+                        buf[o + 1] = c.G;
+                        buf[o + 2] = c.R;
+                        buf[o + 3] = 255;
+                    }
+                Marshal.Copy(buf, 0, data.Scan0, buf.Length);
+            }
+            finally
+            {
+                tmp.UnlockBits(data);
+            }
             return tmp;
         }
         public byte Brightness
@@ -181,37 +260,42 @@ namespace SharpClock
         public void Clear()
         {
             for (int i = 0; i < LedCount; i++)
-                neopixel.SetPixelColor(i, Color.Black);
+            {
+                if (!_lit[i]) continue;
+                neopixel.SetPixelColor(PixelHw[i], Color.Black);
+                _mirror[i] = Color.Black;
+                _lit[i] = false;
+            }
         }
         public void SetPixel(int number, Color c)
         {
             if (number < 0 || number >= LedCount) return;
-            neopixel.SetPixelColor(PixelHw[number], Gamma(c));
+            SetHw(PixelHw[number], Gamma(c), number);
         }
         public void SetPixel(Point point, Color c)
         {
-            neopixel.SetPixelColor(PixelHw[8 * point.X + point.Y], Gamma(c));
+            int number = 8 * point.X + point.Y;
+            if (number < 0 || number >= LedCount) return;
+            SetHw(PixelHw[number], Gamma(c), number);
         }
+
+        /// <summary>Maps a character onto one the font actually has.</summary>
+        char MapChar(char letter)
+        {
+            if (Font.ContainsKey(letter)) return letter;
+            return unexceptedCharacters.TryGetValue(letter, out char replacement) ? replacement : '.';
+        }
+
         public int SetText(string text, Color c, int x = 0, int spaces = 1)
         {
             int current_x = x * 8;
 
             foreach (var letter in text)
             {
-                var l = letter;
-                if (!Font.ContainsKey(l))
-                {
-                    if (unexceptedCharacters.ContainsKey(l))
-                        l = unexceptedCharacters[l];
-                    else
-                        l = '.';
-                }
-                var PixelLetter = Font[l].Points;
-                foreach (var pixel in PixelLetter)
-                {
+                var glyph = Font[MapChar(letter)];
+                foreach (var pixel in glyph.Points)
                     SetPixel(current_x + pixel, c);
-                }
-                current_x += Font[l].Size * 8 + (8 * spaces);
+                current_x += glyph.Size * 8 + (8 * spaces);
             }
             return current_x/8;
         }
@@ -219,8 +303,9 @@ namespace SharpClock
         {
             if (RomanFont == null)
                 LoadRomanFont();
+            if (!RomanFont.TryGetValue(number, out int[] PixelLetter))
+                return;
             int current_x = x * 8;
-            var PixelLetter = RomanFont[number];
             foreach (var pixel in PixelLetter)
             {
                 SetPixel(current_x + pixel, c);
@@ -255,18 +340,8 @@ namespace SharpClock
             int current_x = x * 8;
 
             foreach (var letter in text)
-            {
-                var l = letter;
-                if (!Font.ContainsKey(l))
-                {
-                    if (unexceptedCharacters.ContainsKey(l))
-                        l = unexceptedCharacters[l];
-                    else
-                        l = '.';
-                }
-                var PixelLetter = Font[l].Points;
-                current_x += Font[l].Size * 8 + (8 * spaces);
-            }
+                current_x += Font[MapChar(letter)].Size * 8 + (8 * spaces);
+
             return current_x / 8;
         }
 
@@ -279,8 +354,7 @@ namespace SharpClock
         public Color[] GetBuffer()
         {
             var buffer = new Color[LedCount];
-            for (int i = 0; i < LedCount; i++)
-                buffer[i] = neopixel.LedList.GetColor(PixelHw[i]);
+            Array.Copy(_mirror, buffer, LedCount);
             return buffer;
         }
 
@@ -292,7 +366,10 @@ namespace SharpClock
                 Color[] src = srcCol < 32 ? current : next;
                 int srcX = srcCol < 32 ? srcCol : srcCol - 32;
                 for (int y = 0; y < 8; y++)
-                    neopixel.SetPixelColor(PixelHw[8 * x + y], src[8 * srcX + y]);
+                {
+                    int logical = 8 * x + y;
+                    SetHw(PixelHw[logical], src[8 * srcX + y], logical);
+                }
             }
             neopixel.Show();
         }
@@ -306,7 +383,8 @@ namespace SharpClock
                     Color c = y < yOffset
                         ? next[8 * x + (y + 8 - yOffset)]
                         : current[8 * x + (y - yOffset)];
-                    neopixel.SetPixelColor(PixelHw[8 * x + y], c);
+                    int logical = 8 * x + y;
+                    SetHw(PixelHw[logical], c, logical);
                 }
             }
             neopixel.Show();

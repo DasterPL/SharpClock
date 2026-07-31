@@ -46,13 +46,16 @@ namespace SharpClock
 
             PostHandler postHandler = new PostHandler(WebServer);
         }
+        static int _killed;
         public static void Kill()
         {
-            Logger.Log();
-            WebServer.Stop();
-            LoadingAnimation.Stop();
-            PixelRenderer.Pixel.Stop();
+            // SIGTERM from systemd and a menu action can both land here; run the teardown once.
+            if (Interlocked.Exchange(ref _killed, 1) != 0) return;
+            try { WebServer?.Stop(); } catch (Exception e) { Logger.Log(ConsoleColor.Red, $"[Kill] WebServer: {e.Message}"); }
+            try { LoadingAnimation.Stop(); } catch (Exception e) { Logger.Log(ConsoleColor.Red, $"[Kill] LoadingAnimation: {e.Message}"); }
+            try { PixelRenderer.Pixel?.Stop(); } catch (Exception e) { Logger.Log(ConsoleColor.Red, $"[Kill] Renderer: {e.Message}"); }
             Logger.Log("Shutting down");
+            (AppLogger as FileLogger)?.Flush();
         }
         static void HandleUnixSignals()
         {

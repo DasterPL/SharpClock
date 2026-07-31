@@ -29,6 +29,15 @@ namespace SharpClock
         {
             Orm = new MiniOrmContext(ConnStr);
             Orm.Execute("PRAGMA foreign_keys = ON");
+
+            // WAL turns each settings write into a sequential append instead of a
+            // create-journal/fsync/delete-journal cycle — far less punishment for the SD card.
+            // synchronous=NORMAL is safe under WAL (a crash can lose the last commit, never the file).
+            string mode = Orm.Pragma("PRAGMA journal_mode = WAL");
+            Orm.Execute("PRAGMA synchronous = NORMAL");
+            Orm.Execute("PRAGMA busy_timeout = 5000");
+            Logger.Log(ConsoleColor.DarkGray, $"[Database] journal_mode = {mode}");
+
             Orm.CreateTable<PropertyModel>();
             Orm.CreateTable<ModuleModel>();
             Orm.CreateTable<ModuleParamModel>();

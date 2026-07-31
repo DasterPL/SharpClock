@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 
@@ -8,31 +9,40 @@ namespace SharpClock
     {
         // GIF property 0x5100: per-frame delays in centiseconds (1/100 s)
         const int GifFrameDelayPropertyId = 0x5100;
+        const int DefaultDelayMs = 100;
 
         readonly Image image;
         readonly int[] delays;
         readonly int frameCount;
         readonly Bitmap fallback;
 
-        DateTime lastTime;
+        // Monotonic. DateTime.Now goes backwards at the end of DST and whenever NTP corrects
+        // this clock (the Pi has no RTC), which used to freeze the animation for up to an hour.
+        readonly Stopwatch clock = Stopwatch.StartNew();
+        long lastFrameMs;
         int lastFrame = 0;
 
         public GifImage(Image image)
         {
             this.image = image;
-            frameCount = image.GetFrameCount(FrameDimension.Time);
+            frameCount = Math.Max(1, image.GetFrameCount(FrameDimension.Time));
 
-            var raw = image.GetPropertyItem(GifFrameDelayPropertyId).Value;
             delays = new int[frameCount];
+            byte[] raw = null;
+            try { raw = image.GetPropertyItem(GifFrameDelayPropertyId)?.Value; }
+            catch { /* not every GIF carries the delay block */ }
+
             for (int i = 0; i < frameCount; i++)
             {
                 int offset = i * 4;
-                int cs = offset + 4 <= raw.Length ? BitConverter.ToInt32(raw, offset) : 10;
+                int cs = raw != null && offset + 4 <= raw.Length
+                    ? BitConverter.ToInt32(raw, offset)
+                    : DefaultDelayMs / 10;
                 delays[i] = Math.Max(cs * 10, 20); // centiseconds → ms, minimum 20 ms
             }
 
-            image.SelectActiveFrame(FrameDimension.Time, 0);
-            lastTime = DateTime.Now;
+            try { image.SelectActiveFrame(FrameDimension.Time, 0); } catch { }
+            lastFrameMs = 0;
 
             fallback = new Bitmap(8, 8);
             using (var gr = Graphics.FromImage(fallback))
@@ -52,11 +62,12 @@ namespace SharpClock
         {
             try
             {
-                if ((DateTime.Now - lastTime).TotalMilliseconds >= delays[lastFrame])
+                long now = clock.ElapsedMilliseconds;
+                if (now - lastFrameMs >= delays[lastFrame])
                 {
                     lastFrame = (lastFrame + 1) % frameCount;
                     image.SelectActiveFrame(FrameDimension.Time, lastFrame);
-                    lastTime = DateTime.Now;
+                    lastFrameMs = now;
                 }
                 return image;
             }

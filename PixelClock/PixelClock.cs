@@ -18,6 +18,15 @@ namespace PixelClock
         TimeSpan showAlarmScreen = new TimeSpan(0, 0, 0);
         bool playAlarm = false;
 
+        // The alarm rings for a bounded time and buzzes on an interval. Previously playAlarm
+        // was latched on and never cleared, so Update() spawned a buzzer thread every second
+        // and pinned the clock on screen until the next restart.
+        const int AlarmDurationMs = 60_000;
+        const int AlarmBuzzEveryMs = 5_000;
+        DateTime lastAlarmFired = DateTime.MinValue;
+        Stopwatch alarmSince;
+        long lastBuzzMs;
+
         public PixelClock()
         {
             Icon = "access_time";
@@ -37,15 +46,37 @@ namespace PixelClock
         {
             Date = DateTime.Now;
 
-            if (EnableTimer && Alarm.Hours == Date.Hour && Alarm.Minutes == Date.Minute)
-                playAlarm = true;
-
-            if (playAlarm)
+            // Arm once per occurrence — the minute-match stays true for a whole minute.
+            if (EnableTimer && Alarm.Hours == Date.Hour && Alarm.Minutes == Date.Minute
+                && (Date - lastAlarmFired).TotalMinutes >= 2)
             {
-                Visible = true;
-                pixelRenderer.SwitchModule(this);
-                GPIOevents.EnableBuzzer();
+                lastAlarmFired = Date;
+                alarmSince = Stopwatch.StartNew();
+                lastBuzzMs = -AlarmBuzzEveryMs;
+                playAlarm = true;
             }
+
+            if (!playAlarm) return;
+
+            if (alarmSince == null || alarmSince.ElapsedMilliseconds > AlarmDurationMs)
+            {
+                StopAlarm();
+                return;
+            }
+
+            Visible = true;
+            pixelRenderer?.SwitchModule(this);
+            if (alarmSince.ElapsedMilliseconds - lastBuzzMs >= AlarmBuzzEveryMs)
+            {
+                lastBuzzMs = alarmSince.ElapsedMilliseconds;
+                GPIOevents?.EnableBuzzer();
+            }
+        }
+
+        void StopAlarm()
+        {
+            playAlarm = false;
+            alarmSince = null;
         }
 
         public override void Draw(Stopwatch stopwatch)
@@ -89,7 +120,7 @@ namespace PixelClock
             else if (button == ButtonId.User3)
             {
                 EnableTimer = !EnableTimer;
-                playAlarm = false;
+                StopAlarm();
                 showAlarmScreen = EnableTimer ? new TimeSpan(0, 0, 2) : new TimeSpan(0, 0, 0);
                 new System.Threading.Tasks.Task(async () =>
                 {

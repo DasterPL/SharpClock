@@ -29,8 +29,12 @@ namespace SharpClock
         public bool ExcludeFromQueue { get; set; } = false;
         public int  Timer            { get; set; } = 10000;
         protected int Tickrate { get; set; } = 1000;
-        public bool IsRunning { get; private set; } = false;
+        volatile bool _isRunning = false;
+        public bool IsRunning => _isRunning;
         CancellationTokenSource tokenSource;
+
+        /// <summary>How long Stop() waits for the update loop before giving up and logging.</summary>
+        const int StopTimeoutMs = 5000;
 
         public ISettingsBuilder Settings { get; private set; }
 
@@ -58,59 +62,84 @@ namespace SharpClock
         public void Start(Stopwatch stopwatch)
         {
             this.Stopwatch = stopwatch;
-            if (!IsRunning)
+            if (_isRunning)
             {
-                Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Started");
-                tokenSource = new CancellationTokenSource();
-                if (Tickrate != int.MaxValue)
-                {
-                    Task updateTask = new Task(async () =>
-                    {
-                        IsRunning = true;
-                        while (!tokenSource.Token.IsCancellationRequested)
-                        {
-                            long start = stopwatch.ElapsedMilliseconds;
-                            try
-                            {
-                                Update(stopwatch);
-                            }
-                            catch (Exception e)
-                            {
-                                Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red, $"[Unhandled] {e.GetType().Name}: {e.Message}");
-                            }
-                            long end = stopwatch.ElapsedMilliseconds;
-                            try
-                            {
-                                int sleepMs = Math.Max(0, Tickrate - (int)(end - start));
-                                await Task.Delay(sleepMs, tokenSource.Token);
-                            }
-                            catch (TaskCanceledException)
-                            {
-                                Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.White, " Stopped");
-                            }
-                        }
-                        IsRunning = false;
-                    });
-                    updateTask.Start();
-                }
-                else
-                {
-                    IsRunning = true;
-                }
-            }
-            else
                 Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.Red, "[Error]", ConsoleColor.White, " Can't start module again");
+                return;
+            }
+
+            Logger.Log(ConsoleColor.Blue, $"[{this.GetType().Name}]:", ConsoleColor.White, " Started");
+            tokenSource = new CancellationTokenSource();
+            var token = tokenSource.Token;
+
+            // Published before the task starts, so callers that Start() then immediately
+            // check IsRunning (LoadModule, SwitchModule) never see a stale false.
+            _isRunning = true;
+
+            if (Tickrate == int.MaxValue)
+                return;
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        long start = stopwatch.ElapsedMilliseconds;
+                        try
+                        {
+                            Update(stopwatch);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red, $"[Unhandled] {e.GetType().Name}: {e.Message}");
+                        }
+                        long end = stopwatch.ElapsedMilliseconds;
+                        try
+                        {
+                            int sleepMs = Math.Max(0, Tickrate - (int)(end - start));
+                            await Task.Delay(sleepMs, token);
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.White, " Stopped");
+                        }
+                    }
+                }
+                finally
+                {
+                    // Must run on every exit path, otherwise Stop() would wait forever
+                    // and the module would look alive while its loop is dead.
+                    _isRunning = false;
+                }
+            });
         }
         public void Stop()
         {
-            if (IsRunning)
+            if (!_isRunning) return;
+
+            tokenSource?.Cancel();
+            if (Tickrate == int.MaxValue)
             {
-                tokenSource.Cancel();
-                if (Tickrate == int.MaxValue)
-                    IsRunning = false;
-                else
-                    while (IsRunning) Thread.Sleep(10);
+                _isRunning = false;
             }
+            else
+            {
+                var deadline = DateTime.UtcNow.AddMilliseconds(StopTimeoutMs);
+                while (_isRunning && DateTime.UtcNow < deadline) Thread.Sleep(10);
+                if (_isRunning)
+                {
+                    // The loop is wedged (typically a blocking call inside Update). Stop waiting
+                    // for it, but leave the token source alive — it is still in use by that loop.
+                    Logger.Log(ConsoleColor.Blue, $"[{GetType().Name}]:", ConsoleColor.Red,
+                        " did not stop in time, abandoning update loop");
+                    _isRunning = false;
+                    tokenSource = null;
+                    return;
+                }
+            }
+            try { tokenSource?.Dispose(); } catch { }
+            tokenSource = null;
         }
         public virtual void Reload()
         {

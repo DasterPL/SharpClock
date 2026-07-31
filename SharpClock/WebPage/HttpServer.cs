@@ -29,8 +29,10 @@ namespace SharpClock
         HttpListener listener = new HttpListener();
         string pageDirectory;
 
+        // Endpoints the web UI polls on a timer. Logging them means a disk write every few
+        // seconds for as long as a browser tab is open — pointless SD wear.
         static readonly System.Collections.Generic.HashSet<string> SilentPaths =
-            new System.Collections.Generic.HashSet<string> { "/screen", "/log" };
+            new System.Collections.Generic.HashSet<string> { "/screen", "/log", "/services", "/properties" };
 
         private async Task HandleIncomingConnections()
         {
@@ -69,7 +71,6 @@ namespace SharpClock
                         resp.ContentEncoding = Encoding.UTF8;
                         resp.ContentLength64 = file.LongLength;
                         await resp.OutputStream.WriteAsync(file, 0, file.Length);
-                        resp.Close();
                     }
                     catch (Exception e)
                     {
@@ -77,11 +78,11 @@ namespace SharpClock
                         if (e is FileNotFoundException || e is DirectoryNotFoundException)
                         {
                             byte[] data = Encoding.UTF8.GetBytes("<h1>HTTP Error 404 - File Not Found</h1>");
+                            resp.StatusCode = 404;
                             resp.ContentType = "text/html";
                             resp.ContentEncoding = Encoding.UTF8;
                             resp.ContentLength64 = data.LongLength;
                             await resp.OutputStream.WriteAsync(data, 0, data.Length);
-                            resp.Close();
                         }
                     }
                     return;
@@ -146,12 +147,24 @@ namespace SharpClock
                 resp.ContentEncoding = Encoding.UTF8;
                 resp.ContentLength64 = responseData.LongLength;
                 await resp.OutputStream.WriteAsync(responseData, 0, responseData.Length);
-                resp.Close();
+            }
+            catch (Exception e) when (e is ObjectDisposedException || e is HttpListenerException)
+            {
+                // The client disconnected, or the listener timed the connection out while the
+                // handler was still working. Nothing actionable — don't report it as an app error.
+                Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.DarkGray,
+                    $" client gone ({e.GetType().Name})");
             }
             catch (Exception e)
             {
                 Logger.Log(ConsoleColor.DarkMagenta, "[HTTP Server]", ConsoleColor.Red, "[Error] ", ConsoleColor.White, $"[{e.GetType()}] {e.Message}");
                 OnError?.Invoke(e.Message);
+            }
+            finally
+            {
+                // Every exit path must release the connection. Missing this on the error
+                // branches leaked a socket and an HttpListenerResponse per failed request.
+                try { resp.Close(); } catch { }
             }
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using SharpClock;
@@ -54,7 +55,10 @@ namespace PixelText
                     if (pos-- <= -len)
                         pos = 31;
                 }
-                Timer = (len * Tickrate * 2) + (len < 32 ? 32 - len : 0) * Tickrate;
+                // 64-bit math + clamp: a long enough message used to overflow int and produce
+                // a negative display time, which made the module flash past instantly.
+                long total = (long)len * Tickrate * 2 + (long)(len < 32 ? 32 - len : 0) * Tickrate;
+                Timer = (int)Math.Min(Math.Max(total, 1000), 600000);
             }
         }
 

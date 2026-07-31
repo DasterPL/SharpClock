@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Threading.Tasks;
@@ -48,7 +49,9 @@ namespace PixelWebhook
         public PixelWebhook()
         {
             Icon = "message";
-            HttpServ.WebhookReceived += OnWebhookReceived;
+            // WebhookReceived is static: subscribing per instance without ever unsubscribing
+            // kept every reloaded module alive forever and fired the buzzer once per stale copy.
+            HttpServ.SetHandler(OnWebhookReceived);
             TryStartOrStopServer();
 
             Settings
@@ -72,22 +75,32 @@ namespace PixelWebhook
         {
             lock (httpLock)
             {
-                if (WebhookEnabled)
+                try
                 {
-                    if (HttpServ.listener == null || !HttpServ.listener.IsListening)
+                    if (WebhookEnabled)
                     {
-                        HttpServ.url = $"http://+:{WebhookPort}/webhook/";
-                        HttpServ.listener = new HttpListener();
-                        HttpServ.listener.Prefixes.Clear();
-                        HttpServ.listener.Prefixes.Add($"http://+:{WebhookPort}/webhook/");
-                        HttpServ.listener.Start();
-                        httpTask = Task.Run(() => HttpServ.HandleIncomingConnections());
+                        if (HttpServ.listener == null || !HttpServ.listener.IsListening)
+                        {
+                            HttpServ.url = $"http://+:{WebhookPort}/webhook/";
+                            HttpServ.listener = new HttpListener();
+                            HttpServ.listener.Prefixes.Clear();
+                            HttpServ.listener.Prefixes.Add($"http://+:{WebhookPort}/webhook/");
+                            HttpServ.listener.Start();
+                            httpTask = Task.Run(() => HttpServ.HandleIncomingConnections());
+                        }
+                    }
+                    else
+                    {
+                        if (HttpServ.listener != null && HttpServ.listener.IsListening)
+                            HttpServ.Stop();
                     }
                 }
-                else
+                catch (Exception e)
                 {
-                    if (HttpServ.listener != null && HttpServ.listener.IsListening)
-                        HttpServ.Stop();
+                    // A taken port must not take the whole module down with it.
+                    Logger.Log(ConsoleColor.Blue, "[PixelWebhook]:", ConsoleColor.Red,
+                        $" listener on port {WebhookPort} failed: {e.Message}");
+                    _webhookEnabled = false;
                 }
             }
         }
@@ -106,14 +119,26 @@ namespace PixelWebhook
             Visible = true;
             pixelRenderer?.SwitchModule(this);
             GPIOevents?.EnableBuzzer();
-            Task.Run(() =>
+
+            // Extend the window if another webhook lands while this one is still showing,
+            // and await rather than block a pool thread for 30 s on a single-core device.
+            long deadline = Environment.TickCount + VisibleForMs;
+            System.Threading.Interlocked.Exchange(ref _hideAtTick, deadline);
+            Task.Run(async () =>
             {
-                var sw = Stopwatch.StartNew();
-                while (sw.ElapsedMilliseconds < 30000)
-                    Task.Delay(500).Wait();
+                while (true)
+                {
+                    long at = System.Threading.Interlocked.Read(ref _hideAtTick);
+                    int remaining = unchecked((int)(at - Environment.TickCount));
+                    if (remaining <= 0) break;
+                    await Task.Delay(Math.Min(remaining, 1000));
+                }
                 Visible = false;
             });
         }
+
+        const int VisibleForMs = 30000;
+        long _hideAtTick;
 
         public override void Draw(Stopwatch stopwatch)
         {
@@ -141,7 +166,8 @@ namespace PixelWebhook
                     if (pos-- <= -len)
                         pos = 31;
                 }
-                Timer = (len * Tickrate * 2) + (len < 32 ? 32 - len : 0) * Tickrate;
+                long total = (long)len * Tickrate * 2 + (long)(len < 32 ? 32 - len : 0) * Tickrate;
+                Timer = (int)Math.Min(Math.Max(total, 1000), 600000);
             }
         }
 

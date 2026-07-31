@@ -46,10 +46,11 @@ namespace SharpClock
 
                 var ButtonTask = new Task(async () =>
                 {
-                    
+
                     while (true)
                     {
-
+                      try
+                      {
                         if (button.Value)
                         {
                             int pin = button.BcmPinNumber;
@@ -84,25 +85,49 @@ namespace SharpClock
                             else if (pin == HardwareConfig.BtnUser2) { buttonsStatus[3] = false; }
                             else if (pin == HardwareConfig.BtnUser3) { buttonsStatus[4] = false; }
                         }
-                        await Task.Delay(100);
+                      }
+                      catch (Exception e)
+                      {
+                        // Without this a single handler exception killed this button's polling
+                        // loop for the rest of the process lifetime.
+                        Logger.Log(ConsoleColor.Red, $"[GPIO] button loop: {e.GetType().Name}: {e.Message}");
+                      }
+                      await Task.Delay(100);
                     }
                 });
                 ButtonTask.Start();
             }
         }
 
+        int _buzzing;
         public void EnableBuzzer(int amount = 3, int howLong = 100, int interval = 200)
         {
+            // One buzzer thread at a time. Overlapping calls used to stack up threads that
+            // fought over the same pin; a stuck caller could spawn one per second indefinitely.
+            if (Interlocked.CompareExchange(ref _buzzing, 1, 0) != 0) return;
             new Thread(() =>
             {
-                for (int i = 0; i < amount; i++)
+                try
                 {
-                    buzzer.Write(GpioPinValue.High);
-                    Thread.Sleep(howLong);
-                    buzzer.Write(GpioPinValue.Low);
-                    Thread.Sleep(interval);
+                    for (int i = 0; i < amount; i++)
+                    {
+                        buzzer.Write(GpioPinValue.High);
+                        Thread.Sleep(howLong);
+                        buzzer.Write(GpioPinValue.Low);
+                        Thread.Sleep(interval);
+                    }
                 }
-            }).Start();
+                catch (Exception e)
+                {
+                    Logger.Log(ConsoleColor.Red, $"[GPIO] buzzer: {e.Message}");
+                }
+                finally
+                {
+                    buzzer.Write(GpioPinValue.Low);
+                    Interlocked.Exchange(ref _buzzing, 0);
+                }
+            })
+            { IsBackground = true }.Start();
         }
     }
 }

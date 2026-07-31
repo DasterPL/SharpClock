@@ -11,29 +11,52 @@ namespace MiniOrm
     {
         readonly IDbConnection _conn;
 
+        // A single connection is shared by the render thread, the GPIO thread, HTTP handlers
+        // and every module's Update task. Sqlite connections are not thread-safe, so every
+        // statement goes through this gate. Monitor is reentrant, which lets Transaction()
+        // hold it across the whole body without deadlocking nested queries on the same thread.
+        internal readonly object Gate = new object();
+
         public MiniOrmContext(string connectionString)
         {
             _conn = CreateConnection(connectionString);
             _conn.Open();
         }
 
-        public void Dispose() => _conn.Dispose();
+        public void Dispose()
+        {
+            lock (Gate) _conn.Dispose();
+        }
 
-        public TableQuery Table(string name) => new TableQuery(_conn, name);
+        public TableQuery Table(string name) => new TableQuery(_conn, name, Gate);
 
         public TableQuery Table<T>()
         {
             string name = typeof(T).GetCustomAttribute<TableAttribute>()?.Name ?? typeof(T).Name;
-            return new TableQuery(_conn, name);
+            return new TableQuery(_conn, name, Gate);
         }
 
         public void Execute(string sql)
         {
-            using (var cmd = _conn.CreateCommand())
-            {
-                cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
-            }
+            lock (Gate)
+                using (var cmd = _conn.CreateCommand())
+                {
+                    cmd.CommandText = sql;
+                    cmd.ExecuteNonQuery();
+                }
+        }
+
+        /// <summary>
+        /// Runs a PRAGMA that returns a value (e.g. journal_mode) and gives back the result as text.
+        /// </summary>
+        public string Pragma(string sql)
+        {
+            lock (Gate)
+                using (var cmd = _conn.CreateCommand())
+                {
+                    cmd.CommandText = sql;
+                    return cmd.ExecuteScalar()?.ToString();
+                }
         }
 
         public void CreateTable<T>()
@@ -81,11 +104,22 @@ namespace MiniOrm
 
         public void Transaction(Action body)
         {
-            using (var tx = _conn.BeginTransaction())
-            {
-                body();
-                tx.Commit();
-            }
+            // Held for the whole body so no other thread can slip statements into this
+            // transaction, and so two threads can never open one concurrently.
+            lock (Gate)
+                using (var tx = _conn.BeginTransaction())
+                {
+                    try
+                    {
+                        body();
+                        tx.Commit();
+                    }
+                    catch
+                    {
+                        try { tx.Rollback(); } catch { }
+                        throw;
+                    }
+                }
         }
 
         // ── Private ──────────────────────────────────────────────────────

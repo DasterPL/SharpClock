@@ -10,12 +10,13 @@ namespace SharpClock
 {
     static class LoadingAnimation
     {
-        static bool stop = false;
-        static bool isStoped = false;
+        static volatile bool stop = false;
+        static volatile bool isStoped = false;
         internal static void Stop()
         {
             stop = true;
-            while (!isStoped) Thread.Sleep(10);
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!isStoped && DateTime.UtcNow < deadline) Thread.Sleep(10);
         }
         static Point NextPerimeter(Point p)
         {
